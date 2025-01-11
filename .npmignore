@@ -1,0 +1,9 @@
+node_modules/
+web_modules/
+*.tsbuildinfo
+.npm
+.eslintcache
+
+src/
+tests/
+tsconfig.json

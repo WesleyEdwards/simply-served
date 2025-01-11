@@ -1,4 +1,4 @@
-import {z, ZodIssue, ZodObject, ZodRawShape} from "zod"
+import {z, ZodIssue, ZodObject} from "zod"
 import {v4 as uuidv4} from "uuid"
 import {MaybeError} from "./DbClient"
 
@@ -6,13 +6,13 @@ export const baseObjectSchema = z.object({
   _id: z.string().uuid().default(uuidv4)
 })
 
-export const createDbObject = <T extends ZodRawShape>(
-  fun: (zod: typeof z) => ZodObject<T>
-) => fun(z).merge(baseObjectSchema)
+// export const createDbObject = <T extends ZodRawShape>(
+//   fun: (zod: typeof z) => ZodObject<T>
+// ) => fun(z).merge(baseObjectSchema)
 
-export const createSchema = <T extends ZodRawShape>(
-  fun: (zod: typeof z) => ZodObject<T>
-) => fun(z)
+// export const createSchema = <T extends ZodRawShape>(
+//   fun: (zod: typeof z) => ZodObject<T>
+// ) => fun(z)
 
 export type ParseError = {error: Partial<ZodIssue>}
 
