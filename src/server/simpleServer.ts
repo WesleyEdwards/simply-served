@@ -3,14 +3,21 @@ import express, {Request} from "express"
 
 export type ExpressType = ReturnType<typeof express>
 
+export type SimpleMiddleware<C extends ServerInfo> = (
+  req: Request,
+  skipAuth?: boolean
+) => C | null
+
 export abstract class SimplyServer<C extends ServerInfo> {
-  abstract db: C["db"]
-  middleware: (req: Request, skipAuth?: boolean) => C | null = () => null
+  middleware: SimpleMiddleware<C> = () => null
 
   controllers: Record<string, Route<C>[]> = {}
 
-  constructor(middleware?: (req: Request, skipAuth?: boolean) => C | null) {
-    if (middleware) this.middleware = middleware
+  constructor(params: {
+    db: C["db"]
+    middleware?: (req: Request, skipAuth?: boolean) => C | null
+  }) {
+    if (params.middleware) this.middleware = params.middleware
   }
 
   setController(path: string, routes: Route<C>[]): void {

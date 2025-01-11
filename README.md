@@ -2,27 +2,66 @@
 
 <div align="center">
 
-[![npm latest package](https://img.shields.io/npm/v/@mui/material/latest.svg)](https://www.npmjs.com/package/simply-served)
+[![npm latest package](https://img.shields.io/npm/v/simply-served/latest.svg)](https://www.npmjs.com/package/simply-served)  
+A lightweight framework accelerate up your Node.js server development.
 
 </div>
 
-# Overview
+---
 
-A light-weight node server framework designed to speed up server development
+## Overview
 
-Simply served is designed around the idea that the basic function of a server is to access and manipulate data while enforcing permissions and data integrity.
+**Simply Served** is a lightweight Node.js server framework designed to simplify server development while maintaining flexibility and extensibility.
 
-The intent of this framework is to to make it easy to extends the server by simply creating a model, permissions around that model. A key feature to the framework is auto-generation of REST endpoints with basic CRUD operations based on the model and permissions.
+The framework focuses on enabling developers to:
+- Access and manipulate data effortlessly.
+- Enforce permissions and maintain data integrity.
+- Auto-generate REST endpoints with basic CRUD operations based on models and permissions.
 
-# Example
+Whether you're building a simple application or a complex API, Simply Served provides the tools you need to speed up development.
 
-Check out this [Example Server](https://github.com/WesleyEdwards/simply-served/example).
+---
 
+## Key Features
 
-# Dependencies
-While this framework attempts to avoid unnecessary coupling to other libraries, the following popular libraries offer dependable and extensible functionality to the framework:
-- [Express.js](https://www.npmjs.com/package/express) is used as the underlying backbone for https requests
-- [Zod](https://www.npmjs.com/package/zod) is the validation library used to ensure data integrity
+- **Auto-generated Endpoints**: Define your models and permissions, and let the framework handle the REST endpoints.
+- **Database-agnostic**: Use any database by implementing a simple, abstracted interface.
+- **Built-in Validation**: Ensure data integrity with Zod, a powerful and extensible schema validation library.
+- **Express.js Backbone**: Leverage the flexibility and performance of Express.js under the hood.
 
-## Database
-Simply Served isn't tied to any single server. All interactions with the database are represented using an interface abstracted from direct Database communication. This interface uses a custom [condition system](https://github.com/WesleyEdwards/simply-served/docs/Condition.md) based on (but not reliant on) mongo.db condition system.
+---
+
+## Example
+
+Get started with an example server:  
+[👉 Example Server on GitHub](https://github.com/WesleyEdwards/simply-served/example)
+
+```typescript
+// Basic usage of Simply Served
+import { SimplyServer } from "simply-served";
+
+class MyServer extends SimplyServer {
+  constructor() {
+    super({db: myDatabase, middleware: myMiddleware})
+  }
+  controllers = {
+    user: modelRestEndpoints({
+      endpoint: (db) => db.user,
+      validator: z.object({
+        _id: z.string().uuid(),
+        name: z.string()
+      }),
+      // permissions defining who can do what
+      permissions: {
+        create: () => ({Always: true}),
+        read: () => ({Always: true}),
+        modify: ({myUserId}) => ({_id: {Equal: myUserId}}),
+        delete: () => ({Never: true})
+      }
+    })
+  }
+}
+const server = new MyServer()
+
+server.generateEndpoints(app)
+```

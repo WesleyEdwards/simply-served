@@ -29,7 +29,7 @@ export function controller<C extends ServerInfo>(
   ) => {
     const router = express.Router()
     routes.forEach((route) => {
-      router.use(route.path, (req, res, next) => {
+      router.use(route.path, async (req, res, next): Promise<any> => {
         const sameMethod = req.method.toLowerCase() === route.method
         if (!sameMethod) {
           return next()
@@ -42,7 +42,7 @@ export function controller<C extends ServerInfo>(
         }
         return null
       })
-      router[route.method](route.path, (req, res, next) => {
+      router[route.method](route.path, async (req, res, next): Promise<any> => {
         const c = client(req, route.skipAuth)
         if (c === null) {
           return next()
