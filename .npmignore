@@ -6,4 +6,6 @@ web_modules/
 
 src/
 tests/
+example/
+
 tsconfig.json

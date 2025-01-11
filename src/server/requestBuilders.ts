@@ -1,4 +1,4 @@
-import {Route, ServerInfo} from "./controller"
+import {Route} from "./controller"
 import {DbQueries, HasId} from "./DbClient"
 import {Condition} from "../condition/condition"
 import {buildQuery} from "./buildQuery"
@@ -7,8 +7,9 @@ import {
   partialValidator
 } from "../condition/conditionSchema"
 import {ZodType} from "zod"
+import {ServerContext} from "./simpleServer"
 
-export type BuilderParams<S extends ServerInfo, T extends HasId> = {
+export type BuilderParams<S extends ServerContext, T extends HasId> = {
   validator: ZodType<T, any, any>
   skipAuth?: Partial<SkipAuthOptions>
   endpoint: (clients: S["db"]) => DbQueries<T>
@@ -44,7 +45,7 @@ export type ModelActions<S, T> = {
   postDelete?: (item: T, clients: S) => Promise<unknown>
 }
 
-export const modelRestEndpoints = <C extends ServerInfo, T extends HasId>(
+export const modelRestEndpoints = <C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
 ): Route<C>[] => [
   {
@@ -79,7 +80,7 @@ export const modelRestEndpoints = <C extends ServerInfo, T extends HasId>(
   }
 ]
 
-const getBuilder = <T extends HasId, C extends ServerInfo>(
+const getBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({
@@ -103,7 +104,7 @@ const getBuilder = <T extends HasId, C extends ServerInfo>(
     }
   })
 
-const queryBuilder = <T extends HasId, C extends ServerInfo>(
+const queryBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({
@@ -123,7 +124,7 @@ const queryBuilder = <T extends HasId, C extends ServerInfo>(
     }
   })
 
-const createBuilder = <T extends HasId, C extends ServerInfo>(
+const createBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({
@@ -153,7 +154,7 @@ const createBuilder = <T extends HasId, C extends ServerInfo>(
     }
   })
 
-const modifyBuilder = <T extends HasId, C extends ServerInfo>(
+const modifyBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({
@@ -184,7 +185,7 @@ const modifyBuilder = <T extends HasId, C extends ServerInfo>(
     }
   })
 
-const deleteBuilder = <T extends HasId, C extends ServerInfo>(
+const deleteBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({

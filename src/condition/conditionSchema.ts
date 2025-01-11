@@ -1,5 +1,9 @@
 import {z} from "zod"
-import {checkPartialValidation, isValid, SafeParsable} from "../server/validation"
+import {
+  checkPartialValidation,
+  isValid,
+  SafeParsable
+} from "../server/validation"
 
 export const createConditionSchema = <T>(
   schema: z.ZodType<T, any, any>
@@ -36,7 +40,7 @@ export const createConditionSchema = <T>(
         if (schema instanceof z.ZodArray) {
           const others = createConditionSchema(schema.element)
           if (others.safeParse(body[key]).success === false) {
-            return errorMessage("invalid condition")
+            return errorMessage("invalid ListAnyElement condition")
           }
           return z
             .object({ListAnyElement: z.any(body[key])})
@@ -46,12 +50,12 @@ export const createConditionSchema = <T>(
 
       if (key === "And" || key === "Or") {
         if (!Array.isArray(body[key])) {
-          return errorMessage("invalid condition")
+          return errorMessage(`invalid condition for body ${body}, key: ${key}`)
         }
         const others = createConditionSchema(schema)
         for (const item of body[key]) {
           if (others.safeParse(item).success === false) {
-            return errorMessage("invalid condition")
+            return errorMessage("invalid condition for item")
           }
         }
         return z
@@ -59,19 +63,23 @@ export const createConditionSchema = <T>(
           .safeParse(body) as SF<T>
       }
 
-      if (schema instanceof z.ZodObject) {
-        const valueKeys = zodKeys(schema)
+      if (
+        "shape" in schema &&
+        typeof schema.shape === "object" &&
+        schema.shape !== null
+      ) {
+        const valueKeys = Object.keys(schema.shape)
         if (!valueKeys.includes(key)) {
-          return errorMessage("Invalid condition")
+          return errorMessage(`Invalid key condition ${key}`)
         }
 
-        const subSchema = createConditionSchema(schema.shape[key])
+        const subSchema = createConditionSchema((schema.shape as any)[key])
         if (subSchema.safeParse(body[key]).success === false) {
-          return errorMessage("invalid condition")
+          return errorMessage("invalid subSchema condition")
         }
         return z.object({[key]: z.any(body[key])}).safeParse(body) as SF<T>
       }
-      return errorMessage("Invalid condition")
+      return errorMessage(`Invalid condition. Options exhausted`)
     }
   }
 }
@@ -80,17 +88,6 @@ type SF<T> = ReturnType<SafeParsable<T>["safeParse"]>
 
 const errorMessage = (message: string) =>
   ({success: false, error: {message}} as const)
-
-const zodKeys = <T extends z.ZodTypeAny>(schema: T): string[] => {
-  if (schema === null || schema === undefined) return []
-  if (schema instanceof z.ZodNullable || schema instanceof z.ZodOptional)
-    return zodKeys(schema.unwrap())
-  if (schema instanceof z.ZodArray) return []
-  if (schema instanceof z.ZodObject) {
-    return Object.keys(schema.shape)
-  }
-  return []
-}
 
 export const partialValidator = <T>(
   schema: z.ZodType<T, any, any>

@@ -1,31 +1,28 @@
 import express, {Express, Response, Request} from "express"
+import {ServerContext} from "./simpleServer"
 
-export type ServerInfo = {
-  db: any
-  auth?: any
-}
-
-export type EndpointBuilderType<C extends ServerInfo, Body> = (
+export type EndpointBuilderType<C extends ServerContext, Body> = (
   info: {
     req: Request<any, any, Body>
     res: Response
   } & C
 ) => Promise<Response<any, Record<string, any>>>
 
-export type Route<C extends ServerInfo, Body = any> = {
+export type Route<C extends ServerContext, Body = any> = {
   path: string
   method: "post" | "put" | "get" | "delete"
   endpointBuilder: EndpointBuilderType<C, Body>
   skipAuth?: boolean
 }
 
-export function controller<C extends ServerInfo>(
+export function controller<C extends ServerContext>(
   basePath: string,
   routes: Route<C>[]
 ) {
   return (
     app: Express,
-    client: (req: Request, skipAuth?: boolean) => C | null
+    initCxt: C,
+    middleware: (req: Request, initCtx: C, skipAuth?: boolean) => C | null
   ) => {
     const router = express.Router()
     routes.forEach((route) => {
@@ -34,7 +31,7 @@ export function controller<C extends ServerInfo>(
         if (!sameMethod) {
           return next()
         }
-        const c = client(req, route.skipAuth)
+        const c = middleware(req, initCxt, route.skipAuth)
         if (c === null) {
           return res.status(401).json({message: "Unauthorized"})
         } else {
@@ -43,7 +40,7 @@ export function controller<C extends ServerInfo>(
         return null
       })
       router[route.method](route.path, async (req, res, next): Promise<any> => {
-        const c = client(req, route.skipAuth)
+        const c = middleware(req, initCxt, route.skipAuth)
         if (c === null) {
           return next()
         }

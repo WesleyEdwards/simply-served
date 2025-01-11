@@ -34,11 +34,12 @@ Whether you're building a simple application or a complex API, Simply Served pro
 ## Example
 
 Get started with an example server:  
-[👉 Example Server on GitHub](https://github.com/WesleyEdwards/simply-served/example)
+[👉 Example Server on GitHub](https://github.com/WesleyEdwards/simply-served/tree/main/example/src)
 
 ```typescript
 // Basic usage of Simply Served
 import { SimplyServer } from "simply-served";
+import {z} from "zod"
 
 class MyServer extends SimplyServer {
   constructor() {
@@ -61,6 +62,7 @@ class MyServer extends SimplyServer {
     })
   }
 }
+
 const server = new MyServer()
 
 server.generateEndpoints(app)

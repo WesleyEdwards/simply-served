@@ -6,14 +6,6 @@ export const baseObjectSchema = z.object({
   _id: z.string().uuid().default(uuidv4)
 })
 
-// export const createDbObject = <T extends ZodRawShape>(
-//   fun: (zod: typeof z) => ZodObject<T>
-// ) => fun(z).merge(baseObjectSchema)
-
-// export const createSchema = <T extends ZodRawShape>(
-//   fun: (zod: typeof z) => ZodObject<T>
-// ) => fun(z)
-
 export type ParseError = {error: Partial<ZodIssue>}
 
 export type SafeParsable<T> = {

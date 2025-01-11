@@ -1,42 +1,53 @@
-import {ServerInfo, Route, controller} from "./controller"
+import {Route, controller} from "./controller"
 import express, {Request} from "express"
 
 export type ExpressType = ReturnType<typeof express>
 
-export type SimpleMiddleware<C extends ServerInfo> = (
-  req: Request,
-  skipAuth?: boolean
-) => C | null
+export type ServerContext = {
+  db: any
+  auth?: any
+}
 
-export abstract class SimplyServer<C extends ServerInfo> {
-  middleware: SimpleMiddleware<C> = () => null
+export type SimplyServerConfig<C extends ServerContext> = {
+  initContext: C
+  middleware?: (req: Request, initCtx: C, skipAuth?: boolean) => C | null
+  controllers?: Record<string, Route<C>[]>
+  beforeGenerateEndpoints?: (app: ExpressType, context: C) => void
+  afterGenerateEndpoints?: (app: ExpressType, context: C) => void
+}
 
-  controllers: Record<string, Route<C>[]> = {}
+export const createSimplyServer = <Cxt extends ServerContext>(
+  config: SimplyServerConfig<Cxt>
+) => {
+  const {
+    initContext,
+    middleware = () => null,
+    controllers = {},
+    beforeGenerateEndpoints = () => null,
+    afterGenerateEndpoints = () => null
+  } = config
 
-  constructor(params: {
-    db: C["db"]
-    middleware?: (req: Request, skipAuth?: boolean) => C | null
-  }) {
-    if (params.middleware) this.middleware = params.middleware
+  let registeredControllers = {...controllers}
+
+  const setController = (path: string, routes: Route<Cxt>[]): void => {
+    registeredControllers[path] = routes
   }
 
-  setController(path: string, routes: Route<C>[]): void {
-    this.controllers[path] = routes
-  }
-
-  protected registerEndpoints(app: ExpressType): void {}
-
-  protected beforeGenerateEndpoints(app: ExpressType): void {}
-
-  protected afterGenerateEndpoints(app: ExpressType): void {}
-
-  generateEndpoints = (app: ExpressType) => {
-    this.beforeGenerateEndpoints(app)
-    for (const [path, routes] of Object.entries(this.controllers)) {
-      controller(path, routes)(app, this.middleware)
+  const generateEndpoints = (app: ExpressType): ExpressType => {
+    beforeGenerateEndpoints(app, initContext)
+    for (const [path, routes] of Object.entries(controllers)) {
+      controller(path, routes)(app, initContext, middleware)
     }
-    this.registerEndpoints(app)
-    this.afterGenerateEndpoints(app)
+
+    afterGenerateEndpoints(app, initContext)
+
     return app
+  }
+
+  return {
+    initContext,
+    middleware,
+    setController,
+    generateEndpoints
   }
 }
