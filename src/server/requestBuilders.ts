@@ -1,15 +1,14 @@
-import {Route, SClient} from "./controller"
-import {DbQueries, HasId} from "../DbClient"
+import {Route, SInfo} from "./controller"
+import {DbQueries, HasId} from "./DbClient"
 import {Condition} from "../condition/condition"
 import {buildQuery} from "./buildQuery"
 import {
   createConditionSchema,
   partialValidator
 } from "../condition/conditionSchema"
-import {isValid} from "../validation"
 import {ZodType} from "zod"
 
-export type BuilderParams<T extends HasId, C extends SClient, Auth> = {
+export type BuilderParams<C extends SInfo, T extends HasId> = {
   validator: ZodType<T, any, any>
   skipAuth?: {
     get?: boolean
@@ -20,13 +19,12 @@ export type BuilderParams<T extends HasId, C extends SClient, Auth> = {
   }
   endpoint: (clients: C["db"]) => DbQueries<T>
   permissions: {
-    read: (auth: Auth) => Condition<T>
-    delete: (auth: Auth) => Condition<T>
-    create: (auth: Auth) => Condition<T>
-    modify: (auth: Auth) => Condition<T>
+    read: (auth: C) => Condition<T>
+    delete: (auth: C) => Condition<T>
+    create: (auth: C) => Condition<T>
+    modify: (auth: C) => Condition<T>
   }
   actions?: {
-    // Get
     prepareResponse?: (items: T) => T
     // Create
     interceptCreate?: (item: T, clients: C) => Promise<T>
@@ -44,9 +42,9 @@ export type BuilderParams<T extends HasId, C extends SClient, Auth> = {
   }
 }
 
-export const createBasicEndpoints = <T extends HasId, C extends SClient, Auth>(
-  builderInfo: BuilderParams<T, C, Auth>
-): Route<any, C, any>[] => [
+export const createBasicEndpoints = <C extends SInfo, T extends HasId>(
+  builderInfo: BuilderParams<C, T>
+): Route<C>[] => [
   {
     path: "/:id",
     method: "get",
@@ -79,40 +77,42 @@ export const createBasicEndpoints = <T extends HasId, C extends SClient, Auth>(
   }
 ]
 
-const getBuilder = <T extends HasId, C extends SClient>(
-  info: BuilderParams<T, C, any>
+const getBuilder = <T extends HasId, C extends SInfo>(
+  info: BuilderParams<C, T>
 ) =>
   buildQuery({
-    fun: async ({req, res, db}) => {
-      const {params, jwtBody} = req
+    fun: async ({req, res, ...rest}) => {
+      const client = rest as C
+      const {params} = req
       const {id} = params
       if (!id || typeof id !== "string") {
         return res.status(400).json("Id required")
       }
 
-      const item = await info.endpoint(db).findOne({
-        And: [{_id: {Equal: id}}, info.permissions.read(jwtBody)]
+      const item = await info.endpoint(client.db).findOne({
+        And: [{_id: {Equal: id}}, info.permissions.read(client)]
       })
 
-      if ("error" in item) {
+      if (!item.success) {
         return res.status(404).json(item)
       }
 
-      return res.json(info.actions?.prepareResponse?.(item) ?? item)
+      return res.json(info.actions?.prepareResponse?.(item.data) ?? item.data)
     }
   })
 
-const queryBuilder = <T extends HasId, C extends SClient>(
-  info: BuilderParams<T, C, any>
+const queryBuilder = <T extends HasId, C extends SInfo>(
+  info: BuilderParams<C, T>
 ) =>
   buildQuery({
     validator: createConditionSchema(info.validator),
-    fun: async ({req, res, db}) => {
-      const query = info.permissions.read(req.jwtBody) ?? {Always: true}
+    fun: async ({req, res, ...rest}) => {
+      const client = rest as C
+      const query = info.permissions.read(client) ?? {Always: true}
 
       const fullQuery = {And: [req.body, query]}
 
-      const items = await info.endpoint(db).findMany(fullQuery)
+      const items = await info.endpoint(client.db).findMany(fullQuery)
       return res.json(
         info.actions?.prepareResponse
           ? items.map(info.actions.prepareResponse)
@@ -121,16 +121,16 @@ const queryBuilder = <T extends HasId, C extends SClient>(
     }
   })
 
-const createBuilder = <T extends HasId, C extends SClient>(
-  info: BuilderParams<T, C, any>
+const createBuilder = <T extends HasId, C extends SInfo>(
+  info: BuilderParams<C, T>
 ) =>
   buildQuery({
     validator: info.validator,
     fun: async ({req, res, ...rest}) => {
       const client = rest as C
-      const {jwtBody, body} = req
+      const {body} = req
 
-      const canCreate = info.permissions.create(jwtBody) ?? true
+      const canCreate = info.permissions.create(client) ?? true
 
       if (!canCreate) {
         return res.status(401).json({error: "Cannot create"})
@@ -142,56 +142,63 @@ const createBuilder = <T extends HasId, C extends SClient>(
 
       const created = await info.endpoint(client.db).insertOne(processed)
 
-      if (!isValid<T>(created)) return res.status(500).json(created)
-      await info.actions?.postCreate?.(created, client)
+      if (!created.success) return res.status(500).json(created)
+      await info.actions?.postCreate?.(created.data, client)
 
-      return res.json(info.actions?.prepareResponse?.(created) ?? created)
+      return res.json(
+        info.actions?.prepareResponse?.(created.data) ?? created.data
+      )
     }
   })
 
-const modifyBuilder = <T extends HasId, C extends SClient>(
-  info: BuilderParams<T, C, any>
+const modifyBuilder = <T extends HasId, C extends SInfo>(
+  info: BuilderParams<C, T>
 ) =>
   buildQuery({
     validator: partialValidator(info.validator),
     fun: async ({req, res, ...rest}) => {
       const client = rest as C
-      const {body, params, jwtBody} = req
+      const {body, params} = req
       const id = params.id
 
       const item = await info.endpoint(client.db).findOne({
-        And: [{_id: {Equal: id}}, info.permissions.modify(jwtBody)]
+        And: [{_id: {Equal: id}}, info.permissions.modify(client)]
       })
-      if (!isValid<T>(item)) {
+      if (!item.success) {
         return res.status(404).json({error: "Item not found"})
       }
 
       const intercepted =
-        (await info.actions?.interceptModify?.(item, body, client)) ?? body
+        (await info.actions?.interceptModify?.(item.data, body, client)) ?? body
 
       const updated = await info.endpoint(client.db).updateOne(id, intercepted)
-      if (!isValid<T>(updated)) return res.status(400).json(body)
+      if (!updated.success) return res.status(400).json(body)
 
-      await info.actions?.postModify?.(updated, client)
+      await info.actions?.postModify?.(updated.data, client)
 
-      return res.json(info.actions?.prepareResponse?.(updated) ?? updated)
+      return res.json(
+        info.actions?.prepareResponse?.(updated.data) ?? updated.data
+      )
     }
   })
 
-const deleteBuilder = <T extends HasId, C extends SClient>(
-  info: BuilderParams<T, C, any>
+const deleteBuilder = <T extends HasId, C extends SInfo>(
+  info: BuilderParams<C, T>
 ) =>
   buildQuery({
     fun: async ({req, res, ...rest}) => {
       const client = rest as C
 
+      if (!req.params.id) {
+        return res.status(400).json({error: "Provide a valid id"})
+      }
       const item = await info.endpoint(client.db).findOne({
-        And: [{_id: {Equal: client.db}}, info.permissions.delete(req.jwtBody)]
+        And: [{_id: {Equal: req.params.id}}, info.permissions.delete(client)]
       })
-      if (!isValid<T>(item)) {
+      if (!item.success) {
         return res.status(404).json({error: "Not found"})
       }
-      await info.actions?.interceptDelete?.(item, client)
+      await info.actions?.interceptDelete?.(item.data, client)
 
       const deleted = await info.endpoint(client.db).deleteOne(req.params.id)
 

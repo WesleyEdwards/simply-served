@@ -1,5 +1,5 @@
 import {z} from "zod"
-import {checkPartialValidation, isValid, SafeParsable} from "../validation"
+import {checkPartialValidation, isValid, SafeParsable} from "../server/validation"
 
 export const createConditionSchema = <T>(
   schema: z.ZodType<T, any, any>

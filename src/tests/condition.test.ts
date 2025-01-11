@@ -1,5 +1,5 @@
-import {evalCondition} from "../src/condition/evalCondition"
-import {Condition} from "../src/condition/condition"
+import {Condition} from "../condition/condition"
+import {evalCondition} from "../condition/evalCondition"
 import {Animal, AnimalType, dog_test} from "./mocks"
 
 // Test Condition system, specifically the typing And 'evalCondition' function
