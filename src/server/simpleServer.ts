@@ -48,6 +48,7 @@ export const createSimplyServer = <Cxt extends ServerContext>(
     initContext,
     middleware,
     setController,
+    controllers,
     generateEndpoints
   }
 }

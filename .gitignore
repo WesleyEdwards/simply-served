@@ -5,3 +5,5 @@ web_modules/
 .eslintcache
 
 build/
+
+linkSimplyServer.sh

@@ -10,9 +10,9 @@ const app = express()
 app.use(express.json())
 app.use(cors()) // Disable cors
 
-type DbAndAuth = {db: TodoDb; userId?: string}
+type ServerCtx = {db: TodoDb; userId?: string}
 
-const server = createSimplyServer<DbAndAuth>({
+const server = createSimplyServer<ServerCtx>({
   initContext: {
     db: todoDb
   },
@@ -71,6 +71,7 @@ const server = createSimplyServer<DbAndAuth>({
 
 server.generateEndpoints(app)
 
-console.info("Listening on port 8080")
+console.info("Listening on port 8080\n")
+console.info("Check out /frontend/todo.html to interact with the server")
 
 app.listen(8080)
