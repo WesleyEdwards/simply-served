@@ -3,7 +3,7 @@
 <div align="center">
 
 [![npm latest package](https://img.shields.io/npm/v/simply-served/latest.svg)](https://www.npmjs.com/package/simply-served)  
-A lightweight framework accelerate up your Node.js server development.
+A lightweight framework accelerate your Node.js server development.
 
 </div>
 
