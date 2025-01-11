@@ -1,7 +1,7 @@
 import {checkValidSchema, isValid, SafeParsable} from "./validation"
-import {EndpointBuilderType, SInfo} from "./controller"
+import {EndpointBuilderType, ServerInfo} from "./controller"
 
-export function buildQuery<C extends SInfo, T = any>(params: {
+export function buildQuery<C extends ServerInfo, T = any>(params: {
   validator?: SafeParsable<T>
   fun: EndpointBuilderType<C, T>
 }) {

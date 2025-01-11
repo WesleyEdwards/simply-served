@@ -1,25 +1,25 @@
 import express, {Express, Response, Request} from "express"
 
-export type SInfo = {
+export type ServerInfo = {
   db: any
   auth?: any
 }
 
-export type EndpointBuilderType<C extends SInfo, Body> = (
+export type EndpointBuilderType<C extends ServerInfo, Body> = (
   info: {
     req: Request<any, any, Body>
     res: Response
   } & C
 ) => Promise<Response<any, Record<string, any>>>
 
-export type Route<C extends SInfo, Body = any> = {
+export type Route<C extends ServerInfo, Body = any> = {
   path: string
   method: "post" | "put" | "get" | "delete"
   endpointBuilder: EndpointBuilderType<C, Body>
   skipAuth?: boolean
 }
 
-export function controller<C extends SInfo>(
+export function controller<C extends ServerInfo>(
   basePath: string,
   routes: Route<C>[]
 ) {

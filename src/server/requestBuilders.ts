@@ -1,4 +1,4 @@
-import {Route, SInfo} from "./controller"
+import {Route, ServerInfo} from "./controller"
 import {DbQueries, HasId} from "./DbClient"
 import {Condition} from "../condition/condition"
 import {buildQuery} from "./buildQuery"
@@ -8,41 +8,43 @@ import {
 } from "../condition/conditionSchema"
 import {ZodType} from "zod"
 
-export type BuilderParams<C extends SInfo, T extends HasId> = {
+export type BuilderParams<S extends ServerInfo, T extends HasId> = {
   validator: ZodType<T, any, any>
-  skipAuth?: {
-    get?: boolean
-    query?: boolean
-    create?: boolean
-    modify?: boolean
-    del?: boolean
-  }
-  endpoint: (clients: C["db"]) => DbQueries<T>
-  permissions: {
-    read: (auth: C) => Condition<T>
-    delete: (auth: C) => Condition<T>
-    create: (auth: C) => Condition<T>
-    modify: (auth: C) => Condition<T>
-  }
-  actions?: {
-    prepareResponse?: (items: T) => T
-    // Create
-    interceptCreate?: (item: T, clients: C) => Promise<T>
-    postCreate?: (item: T, clients: C) => Promise<unknown>
-    // Modify
-    interceptModify?: (
-      item: T,
-      mod: Partial<T>,
-      clients: C
-    ) => Promise<Partial<T>>
-    postModify?: (item: T, clients: C) => Promise<unknown>
-    // Delete
-    interceptDelete?: (item: T, clients: C) => Promise<T>
-    postDelete?: (item: T, clients: C) => Promise<unknown>
-  }
+  skipAuth?: Partial<SkipAuthOptions>
+  endpoint: (clients: S["db"]) => DbQueries<T>
+  permissions: ModelPermissions<S, T>
+  actions?: ModelActions<S, T>
 }
 
-export const createBasicEndpoints = <C extends SInfo, T extends HasId>(
+export type SkipAuthOptions = {
+  get: boolean
+  query: boolean
+  create: boolean
+  modify: boolean
+  del: boolean
+}
+
+export type ModelPermissions<S, T> = {
+  read: (auth: S) => Condition<T>
+  delete: (auth: S) => Condition<T>
+  create: (auth: S) => Condition<T>
+  modify: (auth: S) => Condition<T>
+}
+export type ModelActions<S, T> = {
+  prepareResponse?: (items: T) => T
+  interceptCreate?: (item: T, clients: S) => Promise<T>
+  postCreate?: (item: T, clients: S) => Promise<unknown>
+  interceptModify?: (
+    item: T,
+    mod: Partial<T>,
+    clients: S
+  ) => Promise<Partial<T>>
+  postModify?: (item: T, clients: S) => Promise<unknown>
+  interceptDelete?: (item: T, clients: S) => Promise<T>
+  postDelete?: (item: T, clients: S) => Promise<unknown>
+}
+
+export const modelRestEndpoints = <C extends ServerInfo, T extends HasId>(
   builderInfo: BuilderParams<C, T>
 ): Route<C>[] => [
   {
@@ -77,7 +79,7 @@ export const createBasicEndpoints = <C extends SInfo, T extends HasId>(
   }
 ]
 
-const getBuilder = <T extends HasId, C extends SInfo>(
+const getBuilder = <T extends HasId, C extends ServerInfo>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({
@@ -101,7 +103,7 @@ const getBuilder = <T extends HasId, C extends SInfo>(
     }
   })
 
-const queryBuilder = <T extends HasId, C extends SInfo>(
+const queryBuilder = <T extends HasId, C extends ServerInfo>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({
@@ -121,7 +123,7 @@ const queryBuilder = <T extends HasId, C extends SInfo>(
     }
   })
 
-const createBuilder = <T extends HasId, C extends SInfo>(
+const createBuilder = <T extends HasId, C extends ServerInfo>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({
@@ -151,7 +153,7 @@ const createBuilder = <T extends HasId, C extends SInfo>(
     }
   })
 
-const modifyBuilder = <T extends HasId, C extends SInfo>(
+const modifyBuilder = <T extends HasId, C extends ServerInfo>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({
@@ -182,7 +184,7 @@ const modifyBuilder = <T extends HasId, C extends SInfo>(
     }
   })
 
-const deleteBuilder = <T extends HasId, C extends SInfo>(
+const deleteBuilder = <T extends HasId, C extends ServerInfo>(
   info: BuilderParams<C, T>
 ) =>
   buildQuery({

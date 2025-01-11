@@ -1,4 +1,15 @@
-# simply-served
+
+
+<h1 align="center">Simply Served</h1>
+
+<div align="center">
+
+[![npm latest package](https://img.shields.io/npm/v/@mui/material/latest.svg)](https://www.npmjs.com/package/simply-served)
+
+</div>
+
+
+# Overview
 
 A simple node server framework designed to speed up server development.
 
