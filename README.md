@@ -40,14 +40,17 @@ Get started with an example server:
 // Basic usage of Simply Served
 import { SimplyServer } from "simply-served";
 import {z} from "zod"
+import express from "express"
 
-class MyServer extends SimplyServer {
-  constructor() {
-    super({db: myDatabase, middleware: myMiddleware})
-  }
-  controllers = {
+const server = createSimplyServer({
+  initContext: {
+    db: myDatabase,
+  },
+  controllers: {
     user: modelRestEndpoints({
-      endpoint: (db) => db.user,
+      // Database access
+      collection: (db) => db.user,
+      // Schema validation
       validator: z.object({
         _id: z.string().uuid(),
         name: z.string()
@@ -61,9 +64,7 @@ class MyServer extends SimplyServer {
       }
     })
   }
-}
+})
 
-const server = new MyServer()
-
-server.generateEndpoints(app)
+server.generateEndpoints(express())
 ```

@@ -11,9 +11,9 @@ import {ServerContext} from "./simpleServer"
 
 export type BuilderParams<S extends ServerContext, T extends HasId> = {
   validator: ZodType<T, any, any>
-  skipAuth?: Partial<SkipAuthOptions>
-  endpoint: (clients: S["db"]) => DbQueries<T>
+  collection: (clients: S["db"]) => DbQueries<T>
   permissions: ModelPermissions<S, T>
+  skipAuth?: Partial<SkipAuthOptions>
   actions?: ModelActions<S, T>
 }
 
@@ -92,7 +92,7 @@ const getBuilder = <T extends HasId, C extends ServerContext>(
         return res.status(400).json("Id required")
       }
 
-      const item = await info.endpoint(client.db).findOne({
+      const item = await info.collection(client.db).findOne({
         And: [{_id: {Equal: id}}, info.permissions.read(client)]
       })
 
@@ -115,7 +115,7 @@ const queryBuilder = <T extends HasId, C extends ServerContext>(
 
       const fullQuery = {And: [req.body, query]}
 
-      const items = await info.endpoint(client.db).findMany(fullQuery)
+      const items = await info.collection(client.db).findMany(fullQuery)
       return res.json(
         info.actions?.prepareResponse
           ? items.map(info.actions.prepareResponse)
@@ -143,7 +143,7 @@ const createBuilder = <T extends HasId, C extends ServerContext>(
         ? await info.actions.interceptCreate(body, client)
         : body
 
-      const created = await info.endpoint(client.db).insertOne(processed)
+      const created = await info.collection(client.db).insertOne(processed)
 
       if (!created.success) return res.status(500).json(created)
       await info.actions?.postCreate?.(created.data, client)
@@ -164,7 +164,7 @@ const modifyBuilder = <T extends HasId, C extends ServerContext>(
       const {body, params} = req
       const id = params.id
 
-      const item = await info.endpoint(client.db).findOne({
+      const item = await info.collection(client.db).findOne({
         And: [{_id: {Equal: id}}, info.permissions.modify(client)]
       })
       if (!item.success) {
@@ -174,7 +174,7 @@ const modifyBuilder = <T extends HasId, C extends ServerContext>(
       const intercepted =
         (await info.actions?.interceptModify?.(item.data, body, client)) ?? body
 
-      const updated = await info.endpoint(client.db).updateOne(id, intercepted)
+      const updated = await info.collection(client.db).updateOne(id, intercepted)
       if (!updated.success) return res.status(400).json(body)
 
       await info.actions?.postModify?.(updated.data, client)
@@ -195,7 +195,7 @@ const deleteBuilder = <T extends HasId, C extends ServerContext>(
       if (!req.params.id) {
         return res.status(400).json({error: "Provide a valid id"})
       }
-      const item = await info.endpoint(client.db).findOne({
+      const item = await info.collection(client.db).findOne({
         And: [{_id: {Equal: req.params.id}}, info.permissions.delete(client)]
       })
       if (!item.success) {
@@ -203,7 +203,7 @@ const deleteBuilder = <T extends HasId, C extends ServerContext>(
       }
       await info.actions?.interceptDelete?.(item.data, client)
 
-      const deleted = await info.endpoint(client.db).deleteOne(req.params.id)
+      const deleted = await info.collection(client.db).deleteOne(req.params.id)
 
       await info.actions?.postDelete?.(deleted, client)
       return res.json(deleted._id)
