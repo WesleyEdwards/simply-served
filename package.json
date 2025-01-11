@@ -1,6 +1,6 @@
 {
   "name": "simply-served",
-  "version": "1.63.22",
+  "version": "1.0.0",
   "description": "A simple node server framework",
   "main": "build/index.js",
   "types": "build/index.d.ts",
