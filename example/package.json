@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "serve": "ts-node ./src/index.ts"
+    "serve": "ts-node ./src/index.ts",
+    "generate": "ts-node ./tests/generate.ts"
   },
   "author": "",
   "license": "ISC",
@@ -13,9 +14,10 @@
     "simply-served": "1.0.2"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
+    "typescript": "^5.7.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "ts-morph": "^25.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0"
   }
 }
