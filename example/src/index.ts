@@ -10,9 +10,8 @@ const app = express()
 app.use(express.json())
 app.use(cors()) // Disable cors
 
-type ServerCtx = {db: TodoDb; userId?: string}
-
-const server = createSimplyServer<ServerCtx>({
+// Create server, providing a database, middleware, controllers, and any additional endpoints
+const server = createSimplyServer<{db: TodoDb; userId?: string}>({
   initContext: {
     db: todoDb
   },
