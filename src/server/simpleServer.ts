@@ -10,7 +10,7 @@ export type ServerContext = {
 
 export type SimplyServerConfig<C extends ServerContext> = {
   initContext: C
-  middleware?: (req: Request, initCtx: C, skipAuth?: boolean) => C | null
+  middleware: (req: Request, initCtx: C, skipAuth?: boolean) => C | null
   controllers?: Record<string, Route<C>[]>
   beforeGenerateEndpoints?: (app: ExpressType, context: C) => void
   afterGenerateEndpoints?: (app: ExpressType, context: C) => void
@@ -21,7 +21,7 @@ export const createSimplyServer = <Cxt extends ServerContext>(
 ) => {
   const {
     initContext,
-    middleware = () => null,
+    middleware,
     controllers = {},
     beforeGenerateEndpoints = () => null,
     afterGenerateEndpoints = () => null

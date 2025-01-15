@@ -1,5 +1,5 @@
-import {Route} from "./controller"
-import {DbQueries, HasId} from "./DbClient"
+import {Route} from "../server/controller"
+import {DbQueries, HasId} from "../server/DbClient"
 import {Condition} from "../condition/condition"
 import {buildQuery} from "./buildQuery"
 import {
@@ -7,15 +7,17 @@ import {
   partialValidator
 } from "../condition/conditionSchema"
 import {ZodType} from "zod"
-import {ServerContext} from "./simpleServer"
+import {ServerContext} from "../server/simpleServer"
 
 export type BuilderParams<S extends ServerContext, T extends HasId> = {
   validator: ZodType<T, any, any>
   collection: (clients: S["db"]) => DbQueries<T>
   permissions: ModelPermissions<S, T>
-  skipAuth?: Partial<SkipAuthOptions>
+  skipAuth?: ModelAuthOptions
   actions?: ModelActions<S, T>
 }
+
+export type ModelAuthOptions = Partial<SkipAuthOptions> | true
 
 export type SkipAuthOptions = {
   get: boolean
@@ -31,6 +33,7 @@ export type ModelPermissions<S, T> = {
   create: (auth: S) => Condition<T>
   modify: (auth: S) => Condition<T>
 }
+
 export type ModelActions<S, T> = {
   prepareResponse?: (items: T) => T
   interceptCreate?: (item: T, clients: S) => Promise<T>
@@ -47,38 +50,41 @@ export type ModelActions<S, T> = {
 
 export const modelRestEndpoints = <C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
-): Route<C>[] => [
-  {
-    path: "/:id",
-    method: "get",
-    skipAuth: builderInfo.skipAuth?.get,
-    endpointBuilder: getBuilder(builderInfo)
-  },
-  {
-    path: "/query",
-    method: "post",
-    skipAuth: builderInfo.skipAuth?.query,
-    endpointBuilder: queryBuilder(builderInfo)
-  },
-  {
-    path: "/insert",
-    method: "post",
-    skipAuth: builderInfo.skipAuth?.create,
-    endpointBuilder: createBuilder(builderInfo)
-  },
-  {
-    path: "/:id",
-    method: "put",
-    skipAuth: builderInfo.skipAuth?.modify,
-    endpointBuilder: modifyBuilder(builderInfo)
-  },
-  {
-    path: "/:id",
-    method: "delete",
-    skipAuth: builderInfo.skipAuth?.del,
-    endpointBuilder: deleteBuilder(builderInfo)
-  }
-]
+): Route<C>[] => {
+  const skipAuth = getSkipAuth(builderInfo.skipAuth)
+  return [
+    {
+      path: "/:id",
+      method: "get",
+      skipAuth: skipAuth.get,
+      endpointBuilder: getBuilder(builderInfo)
+    },
+    {
+      path: "/query",
+      method: "post",
+      skipAuth: skipAuth.query,
+      endpointBuilder: queryBuilder(builderInfo)
+    },
+    {
+      path: "/insert",
+      method: "post",
+      skipAuth: skipAuth.create,
+      endpointBuilder: createBuilder(builderInfo)
+    },
+    {
+      path: "/:id",
+      method: "put",
+      skipAuth: skipAuth.modify,
+      endpointBuilder: modifyBuilder(builderInfo)
+    },
+    {
+      path: "/:id",
+      method: "delete",
+      skipAuth: skipAuth.del,
+      endpointBuilder: deleteBuilder(builderInfo)
+    }
+  ]
+}
 
 const getBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
@@ -174,7 +180,9 @@ const modifyBuilder = <T extends HasId, C extends ServerContext>(
       const intercepted =
         (await info.actions?.interceptModify?.(item.data, body, client)) ?? body
 
-      const updated = await info.collection(client.db).updateOne(id, intercepted)
+      const updated = await info
+        .collection(client.db)
+        .updateOne(id, intercepted)
       if (!updated.success) return res.status(400).json(body)
 
       await info.actions?.postModify?.(updated.data, client)
@@ -209,3 +217,22 @@ const deleteBuilder = <T extends HasId, C extends ServerContext>(
       return res.json(deleted._id)
     }
   })
+
+const getSkipAuth = (skip?: ModelAuthOptions): SkipAuthOptions => {
+  if (typeof skip === "boolean") {
+    return {
+      get: skip,
+      query: skip,
+      create: skip,
+      modify: skip,
+      del: skip
+    }
+  }
+  return {
+    get: skip?.get ?? false,
+    query: skip?.query ?? false,
+    create: skip?.create ?? false,
+    modify: skip?.modify ?? false,
+    del: skip?.del ?? false
+  }
+}

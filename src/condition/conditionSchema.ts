@@ -94,8 +94,12 @@ export const partialValidator = <T>(
 ): SafeParsable<Partial<T>> => {
   return {
     safeParse: (body: any) => {
-      if (schema instanceof z.ZodObject) {
-        const partial = checkPartialValidation(body, schema)
+      if ("partial" in schema && typeof schema.partial === "function") {
+        // if (schema instanceof z.ZodObject) {
+        const partial = checkPartialValidation(
+          body,
+          schema as unknown as z.ZodObject<any, any>
+        )
         if (!isValid<T>(partial)) {
           return {success: false, error: "Invalid partial"}
         }
