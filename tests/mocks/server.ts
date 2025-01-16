@@ -8,11 +8,8 @@ export const getMockServer = () => {
   const mockApp = express()
   mockApp.use(express.json())
 
-  const server = createSimplyServer<{db: TodoDb; auth?: {userId: string}}>({
-    initContext: {
-      db: todoDb,
-      auth: {userId: ""}
-    },
+  const server = createSimplyServer<MockCtx>({
+    initContext: mockCtx,
     middleware: verifyAuth("supersecretencryptionkey"),
     controllers: {
       todo: modelRestEndpoints({
@@ -59,3 +56,7 @@ export const getMockServer = () => {
 
   return mockApp
 }
+
+export type MockCtx = {db: TodoDb; auth?: {userId: string}}
+
+export const mockCtx: MockCtx = {db: todoDb, auth: {userId: "123"}}

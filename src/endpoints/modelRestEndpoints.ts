@@ -35,7 +35,7 @@ export type ModelPermissions<S, T> = {
 }
 
 export type ModelActions<S, T> = {
-  prepareResponse?: (items: T) => T
+  prepareResponse?: (items: T, clients: S) => T
   interceptCreate?: (item: T, clients: S) => Promise<T>
   postCreate?: (item: T, clients: S) => Promise<unknown>
   interceptModify?: (
@@ -106,7 +106,9 @@ const getBuilder = <T extends HasId, C extends ServerContext>(
         return res.status(404).json(item)
       }
 
-      return res.json(info.actions?.prepareResponse?.(item.data) ?? item.data)
+      return res.json(
+        info.actions?.prepareResponse?.(item.data, client) ?? item.data
+      )
     }
   })
 
@@ -122,11 +124,12 @@ const queryBuilder = <T extends HasId, C extends ServerContext>(
       const fullQuery = {And: [req.body, query]}
 
       const items = await info.collection(client.db).findMany(fullQuery)
-      return res.json(
-        info.actions?.prepareResponse
-          ? items.map(info.actions.prepareResponse)
-          : items
-      )
+      if (info.actions?.prepareResponse) {
+        return res.json(
+          items.map((item) => info.actions!.prepareResponse!(item, client))
+        )
+      }
+      return res.json(items)
     }
   })
 
@@ -155,7 +158,7 @@ const createBuilder = <T extends HasId, C extends ServerContext>(
       await info.actions?.postCreate?.(created.data, client)
 
       return res.json(
-        info.actions?.prepareResponse?.(created.data) ?? created.data
+        info.actions?.prepareResponse?.(created.data, client) ?? created.data
       )
     }
   })
@@ -188,7 +191,7 @@ const modifyBuilder = <T extends HasId, C extends ServerContext>(
       await info.actions?.postModify?.(updated.data, client)
 
       return res.json(
-        info.actions?.prepareResponse?.(updated.data) ?? updated.data
+        info.actions?.prepareResponse?.(updated.data, client) ?? updated.data
       )
     }
   })
