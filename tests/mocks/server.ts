@@ -9,7 +9,7 @@ export const getMockServer = () => {
   mockApp.use(express.json())
 
   const server = createSimplyServer<MockCtx>({
-    initContext: mockCtx,
+    initContext: {db: todoDb},
     middleware: verifyAuth("supersecretencryptionkey"),
     controllers: {
       todo: modelRestEndpoints({
@@ -21,10 +21,12 @@ export const getMockServer = () => {
           done: z.boolean().default(true)
         }),
         permissions: {
-          read: () => ({Always: true}),
-          create: () => ({Always: true}),
-          modify: () => ({Always: true}),
-          delete: ({auth}) => ({owner: {Equal: auth?.userId ?? ""}})
+          read: {skipAuth: {Always: true}},
+          create: {skipAuth: {Always: true}},
+          modify: {skipAuth: {Always: true}}, 
+          delete: {
+            modelAuth: (auth) => ({owner: {Equal: auth.userId}})
+          }
         }
       }),
       user: modelRestEndpoints({
@@ -34,14 +36,14 @@ export const getMockServer = () => {
           name: z.string()
         }),
         permissions: {
-          create: () => ({Always: true}),
-          read: () => ({Always: true}),
-          modify: ({auth}) => ({_id: {Equal: auth?.userId ?? ""}}),
-          delete: () => ({Never: true})
-        },
-        skipAuth: {
-          get: true,
-          query: true
+          create: {skipAuth: {Always: true}},
+          read: {skipAuth: {Always: true}},
+          modify: {
+            modelAuth: (auth) => ({_id: {Equal: auth.userId}})
+          },
+          delete: {
+            userAuth: () => ({Never: true})
+          }
         }
       })
     },
@@ -57,6 +59,4 @@ export const getMockServer = () => {
   return mockApp
 }
 
-export type MockCtx = {db: TodoDb; auth?: {userId: string}}
-
-export const mockCtx: MockCtx = {db: todoDb, auth: {userId: "123"}}
+export type MockCtx = {db: TodoDb; auth: {userId: string}}

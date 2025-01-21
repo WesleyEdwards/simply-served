@@ -8,30 +8,30 @@ import {
 } from "../condition/conditionSchema"
 import {ZodType} from "zod"
 import {ServerContext} from "../server/simpleServer"
+import {SafeParsable} from "../server"
+import {evalCondition} from "../condition"
 
 export type BuilderParams<S extends ServerContext, T extends HasId> = {
   validator: ZodType<T, any, any>
   collection: (clients: S["db"]) => DbQueries<T>
   permissions: ModelPermissions<S, T>
-  skipAuth?: ModelAuthOptions
   actions?: ModelActions<S, T>
 }
 
-export type ModelAuthOptions = Partial<SkipAuthOptions> | true
-
-export type SkipAuthOptions = {
-  get: boolean
-  query: boolean
-  create: boolean
-  modify: boolean
-  del: boolean
+/**
+ * If multiple keys of 'ModelPermOption' are provided they are calculated as "Ors"
+ */
+export type ModelPermOption<S extends ServerContext, T> = {
+  skipAuth?: Condition<T>
+  userAuth?: Condition<S["auth"]>
+  modelAuth?: (auth: S["auth"]) => Condition<T>
 }
 
-export type ModelPermissions<S, T> = {
-  read: (auth: S) => Condition<T>
-  delete: (auth: S) => Condition<T>
-  create: (auth: S) => Condition<T>
-  modify: (auth: S) => Condition<T>
+export type ModelPermissions<S extends ServerContext, T> = {
+  read: ModelPermOption<S, T>
+  delete: ModelPermOption<S, T>
+  create: ModelPermOption<S, T>
+  modify: ModelPermOption<S, T>
 }
 
 export type ModelActions<S, T> = {
@@ -48,39 +48,33 @@ export type ModelActions<S, T> = {
   postDelete?: (item: T, clients: S) => Promise<unknown>
 }
 
-export const modelRestEndpoints = <C extends ServerContext, T extends HasId>(
+export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
-): Route<C>[] => {
-  const skipAuth = getSkipAuth(builderInfo.skipAuth)
+): Route<C, any, boolean>[] {
   return [
     {
       path: "/:id",
       method: "get",
-      skipAuth: skipAuth.get,
       endpointBuilder: getBuilder(builderInfo)
     },
     {
       path: "/query",
       method: "post",
-      skipAuth: skipAuth.query,
       endpointBuilder: queryBuilder(builderInfo)
     },
     {
       path: "/insert",
       method: "post",
-      skipAuth: skipAuth.create,
       endpointBuilder: createBuilder(builderInfo)
     },
     {
       path: "/:id",
       method: "put",
-      skipAuth: skipAuth.modify,
       endpointBuilder: modifyBuilder(builderInfo)
     },
     {
       path: "/:id",
       method: "delete",
-      skipAuth: skipAuth.del,
       endpointBuilder: deleteBuilder(builderInfo)
     }
   ]
@@ -89,9 +83,10 @@ export const modelRestEndpoints = <C extends ServerContext, T extends HasId>(
 const getBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
-  buildQuery({
+  buildQuery<C, T>({
+    authOptions: getAuthOptions(info.permissions, "read"),
     fun: async ({req, res, ...rest}) => {
-      const client = rest as C
+      const client = rest as unknown as C
       const {params} = req
       const {id} = params
       if (!id || typeof id !== "string") {
@@ -99,7 +94,10 @@ const getBuilder = <T extends HasId, C extends ServerContext>(
       }
 
       const item = await info.collection(client.db).findOne({
-        And: [{_id: {Equal: id}}, info.permissions.read(client)]
+        And: [
+          {_id: {Equal: id}},
+          getItemCondition(info.permissions, client, "read")
+        ]
       })
 
       if (!item.success) {
@@ -115,13 +113,15 @@ const getBuilder = <T extends HasId, C extends ServerContext>(
 const queryBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
-  buildQuery({
+  buildQuery<C, T>({
+    authOptions: getAuthOptions(info.permissions, "read"),
     validator: createConditionSchema(info.validator),
     fun: async ({req, res, ...rest}) => {
-      const client = rest as C
-      const query = info.permissions.read(client) ?? {Always: true}
+      const client = rest as unknown as C
 
-      const fullQuery = {And: [req.body, query]}
+      const fullQuery = {
+        And: [req.body, getItemCondition(info.permissions, client, "read")]
+      }
 
       const items = await info.collection(client.db).findMany(fullQuery)
       if (info.actions?.prepareResponse) {
@@ -136,13 +136,17 @@ const queryBuilder = <T extends HasId, C extends ServerContext>(
 const createBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
-  buildQuery({
+  buildQuery<C, T>({
+    authOptions: getAuthOptions(info.permissions, "create"),
     validator: info.validator,
     fun: async ({req, res, ...rest}) => {
-      const client = rest as C
+      const client = rest as unknown as C
       const {body} = req
 
-      const canCreate = info.permissions.create(client) ?? true
+      const canCreate = evalCondition(
+        body,
+        getItemCondition(info.permissions, client, "create")
+      )
 
       if (!canCreate) {
         return res.status(401).json({error: "Cannot create"})
@@ -166,15 +170,19 @@ const createBuilder = <T extends HasId, C extends ServerContext>(
 const modifyBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
-  buildQuery({
-    validator: partialValidator(info.validator),
+  buildQuery<C, T>({
+    authOptions: getAuthOptions(info.permissions, "modify"),
+    validator: partialValidator(info.validator) as unknown as SafeParsable<T>,
     fun: async ({req, res, ...rest}) => {
-      const client = rest as C
+      const client = rest as unknown as C
       const {body, params} = req
       const id = params.id
 
       const item = await info.collection(client.db).findOne({
-        And: [{_id: {Equal: id}}, info.permissions.modify(client)]
+        And: [
+          {_id: {Equal: id}},
+          getItemCondition(info.permissions, client, "modify")
+        ]
       })
       if (!item.success) {
         return res.status(404).json({error: "Item not found"})
@@ -199,15 +207,19 @@ const modifyBuilder = <T extends HasId, C extends ServerContext>(
 const deleteBuilder = <T extends HasId, C extends ServerContext>(
   info: BuilderParams<C, T>
 ) =>
-  buildQuery({
+  buildQuery<C, T>({
+    authOptions: getAuthOptions(info.permissions, "delete"),
     fun: async ({req, res, ...rest}) => {
-      const client = rest as C
+      const client = rest as unknown as C
 
       if (!req.params.id) {
         return res.status(400).json({error: "Provide a valid id"})
       }
       const item = await info.collection(client.db).findOne({
-        And: [{_id: {Equal: req.params.id}}, info.permissions.delete(client)]
+        And: [
+          {_id: {Equal: req.params.id}},
+          getItemCondition(info.permissions, client, "delete")
+        ]
       })
       if (!item.success) {
         return res.status(404).json({error: "Not found"})
@@ -221,21 +233,57 @@ const deleteBuilder = <T extends HasId, C extends ServerContext>(
     }
   })
 
-const getSkipAuth = (skip?: ModelAuthOptions): SkipAuthOptions => {
-  if (typeof skip === "boolean") {
-    return {
-      get: skip,
-      query: skip,
-      create: skip,
-      modify: skip,
-      del: skip
-    }
+const extractItemCondition = <C extends ServerContext, T extends HasId>(
+  value: ModelPermOption<C, T>,
+  clients: C
+): Condition<T> => {
+  if (value.skipAuth) {
+    return {Always: true}
   }
+  if (value.modelAuth) {
+    return value.modelAuth(clients.auth)
+  }
+  return {Always: true}
+}
+const extractAuthCondition = <C extends ServerContext, T extends HasId>(
+  value: ModelPermOption<C, T>
+): Condition<C["auth"]> => {
+  if (value.skipAuth) {
+    return {Always: true}
+  }
+  if (value.modelAuth) {
+    return {Always: true}
+  }
+  if (value.userAuth) {
+    return value.userAuth
+  }
+  return {Always: true}
+}
+
+// Can perfom action on item
+const getItemCondition = <C extends ServerContext, T extends HasId>(
+  perms: BuilderParams<C, T>["permissions"],
+  clients: C,
+  type: "read" | "create" | "modify" | "delete"
+): Condition<T> => {
+  const val = perms[type]
+  return extractItemCondition(val, clients)
+}
+
+// User can perform action
+const getAuthOptions = <C extends ServerContext, T extends HasId>(
+  perms: BuilderParams<C, T>["permissions"],
+  type: "read" | "create" | "modify" | "delete"
+): {auth: (auth: C["auth"]) => Condition<C["auth"]>} | {skipAuth: true} => {
+  const val = perms[type]
+
+  if (val.skipAuth) {
+    return {skipAuth: true}
+  }
+
   return {
-    get: skip?.get ?? false,
-    query: skip?.query ?? false,
-    create: skip?.create ?? false,
-    modify: skip?.modify ?? false,
-    del: skip?.del ?? false
+    auth: (auth: C["auth"]) => {
+      return extractAuthCondition(val)
+    }
   }
 }

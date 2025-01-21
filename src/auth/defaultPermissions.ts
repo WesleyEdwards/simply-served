@@ -1,8 +1,6 @@
-import {ModelPermissions} from "../server"
-
-export const alwaysAllowed = <Ctx, T>(): ModelPermissions<Ctx, T> => ({
-  read: () => ({Always: true}),
-  delete: () => ({Always: true}),
-  create: () => ({Always: true}),
-  modify: () => ({Always: true})
-})
+export const alwaysAllowed = {
+  read: {skipAuth: {Always: true}} as const,
+  delete: {skipAuth: {Always: true}} as const,
+  create: {skipAuth: {Always: true}} as const,
+  modify: {skipAuth: {Always: true}} as const
+}

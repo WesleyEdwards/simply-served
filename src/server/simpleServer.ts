@@ -1,19 +1,27 @@
+import {AuthOptions} from "../endpoints"
 import {Route, controller} from "./controller"
 import express, {Request} from "express"
+import {WithoutAuth} from "../endpoints/types"
 
 export type ExpressType = ReturnType<typeof express>
 
 export type ServerContext = {
   db: any
-  auth?: any
+  auth: any
 }
 
+export type Middleware<C extends ServerContext> = (
+  req: Request,
+  initCtx: WithoutAuth<C>,
+  authOptions: AuthOptions<C>
+) => C | null
+
 export type SimplyServerConfig<C extends ServerContext> = {
-  initContext: C
-  middleware: (req: Request, initCtx: C, skipAuth?: boolean) => C | null
+  initContext: WithoutAuth<C>
+  middleware: Middleware<C>
   controllers?: Record<string, Route<C>[]>
-  beforeGenerateEndpoints?: (app: ExpressType, context: C) => void
-  afterGenerateEndpoints?: (app: ExpressType, context: C) => void
+  beforeGenerateEndpoints?: (app: ExpressType, context: WithoutAuth<C>) => void
+  afterGenerateEndpoints?: (app: ExpressType, context: WithoutAuth<C>) => void
 }
 
 export const createSimplyServer = <Cxt extends ServerContext>(

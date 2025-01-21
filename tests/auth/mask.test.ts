@@ -1,6 +1,14 @@
 import {maskKeysBasedOnPerms} from "../../src"
 import {Animal, dog_test} from "../mocks"
-import {mockCtx, MockCtx} from "../mocks/server"
+import todoDb from "../mocks/database"
+import {MockCtx} from "../mocks/server"
+
+const mockCtx: MockCtx = {
+  db: todoDb,
+  auth: {
+    userId: "123"
+  }
+}
 
 describe("Verify masking works", () => {
   const dog = {...dog_test}
