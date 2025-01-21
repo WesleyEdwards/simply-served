@@ -19,6 +19,10 @@ export type BuilderParams<S extends ServerContext, T extends HasId> = {
 }
 
 /**
+ * 'skipAuth' - Condition that determines if any auth is checked
+ * 'userAuth' - Condition based on a users permission to determine if they can perform an action
+ * 'modelAuth' - Condition determining whether a user can perform an action for T
+ * 
  * If multiple keys of 'ModelPermOption' are provided they are calculated as "Ors"
  */
 export type ModelPermOption<S extends ServerContext, T> = {

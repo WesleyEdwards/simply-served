@@ -23,7 +23,7 @@ export const getMockServer = () => {
         permissions: {
           read: {skipAuth: {Always: true}},
           create: {skipAuth: {Always: true}},
-          modify: {skipAuth: {Always: true}}, 
+          modify: {skipAuth: {Always: true}},
           delete: {
             modelAuth: (auth) => ({owner: {Equal: auth.userId}})
           }
@@ -42,7 +42,7 @@ export const getMockServer = () => {
             modelAuth: (auth) => ({_id: {Equal: auth.userId}})
           },
           delete: {
-            userAuth: () => ({Never: true})
+            userAuth: {Never: true}
           }
         }
       })
