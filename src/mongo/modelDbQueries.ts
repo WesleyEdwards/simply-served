@@ -49,12 +49,8 @@ export function modelDbQueries<T extends HasId>(
       }
       return {success: true, data: value as T}
     },
-    deleteOne: async (id, condition) => {
-      const c: Filter<T> = condition
-        ? conditionToFilter({
-            And: [{_id: {Equal: id}}, condition]
-          } as Condition<T>)
-        : conditionToFilter({_id: {Equal: id}} as Condition<T>)
+    deleteOne: async (id) => {
+      const c: Filter<T> = conditionToFilter({_id: {Equal: id}} as Condition<T>)
 
       const item = await collection.findOneAndDelete(c)
       if (!item) {

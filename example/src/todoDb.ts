@@ -1,8 +1,7 @@
-import {DataStore} from "simply-served"
-import {Todo, TodoDb, User} from "./types"
+import {persistentDb} from "simply-served"
 
-const todoDb: TodoDb = {
-  todo: new DataStore<Todo>([
+const todoDb = persistentDb({
+  todo: [
     {
       _id: "5de0ee99-d552-4686-aafc-9895c5782071",
       done: false,
@@ -45,13 +44,13 @@ const todoDb: TodoDb = {
       owner: "df854171-5e36-47cf-b679-3258a2032b51",
       todoItem: "Walk the dog"
     }
-  ]),
-  user: new DataStore<User>([
+  ],
+  user: [
     {_id: "df854171-5e36-47cf-b679-3258a2032b51", name: "John Doe"},
     {_id: "7565abf0-c7eb-44b7-a6e4-075e7590bc4d", name: "George Admin"},
     {_id: "d246be99-2c1e-4059-8a02-4b63e4699d42", name: "Alice Johnson"},
     {_id: "e4d8a2e8-371a-48c9-b1f9-85b6efc84ff4", name: "Sophia Smith"}
-  ])
-}
+  ]
+})
 
 export default todoDb
