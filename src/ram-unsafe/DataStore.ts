@@ -3,6 +3,15 @@ import {HasId, MaybeError} from "../server"
 
 export class DataStore<T extends HasId> {
   constructor(public items: T[]) {}
+
+  findOneById = async (id: string): Promise<MaybeError<T>> => {
+    const item = this.items.find((i) => i._id === id)
+    if (item) {
+      return {success: true, data: item}
+    }
+    return {success: false, error: "Unable to find item"}
+  }
+
   findOne = async (filter: Condition<T>): Promise<MaybeError<T>> => {
     const filtered = this.items.filter((item) => evalCondition(item, filter))
 

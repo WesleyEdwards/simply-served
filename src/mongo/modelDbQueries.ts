@@ -1,4 +1,4 @@
-import {Collection, Filter, OptionalUnlessRequiredId} from "mongodb"
+import {Collection, Filter, ObjectId, OptionalUnlessRequiredId} from "mongodb"
 import {DbQueries, HasId} from "../server/DbClient"
 import {conditionToFilter} from "./conditionToFilter"
 import {Condition} from "condition"
@@ -16,6 +16,15 @@ export function modelDbQueries<T extends HasId>(
   const collection: Collection<T> = db.collection(collectionPath)
 
   return {
+    findOneById: async (id: string) => {
+      const item = (await collection.findOne({
+        _id: new ObjectId(id),
+      } as Filter<T>)) as T | null
+      if (item) {
+        return {success: true, data: item}
+      }
+      return {success: false, error: "unable to find Item"}
+    },
     insertOne: async (newItem: T) => {
       const {acknowledged} = await collection.insertOne(
         newItem as OptionalUnlessRequiredId<T>
@@ -57,6 +66,6 @@ export function modelDbQueries<T extends HasId>(
         throw new Error("Item not found")
       }
       return item as T
-    }
+    },
   }
 }

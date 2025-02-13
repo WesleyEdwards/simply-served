@@ -38,14 +38,14 @@ export const persistentDb = <In extends Record<string, any[]>>(
             ) {
               const json = JSON.stringify(target.items)
               fs.writeFile(file, json, "utf8", (err: any) => {
-                console.log(err)
+                console.error(err)
               })
             }
             return result
           }
         }
         return value
-      }
+      },
     }
 
     let parsed: any = defaultItems

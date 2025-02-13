@@ -1,3 +1,8 @@
+/**
+ * https://github.com/WesleyEdwards/simply-served/blob/main/docs/Condition.md
+ * 
+ * Generic condition definition for filtering data
+ */
 export type Condition<T> =
   | {Always: true}
   | {Never: true}

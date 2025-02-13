@@ -4,7 +4,7 @@ import {Condition} from "../condition/condition"
 import {buildQuery} from "./buildQuery"
 import {
   createConditionSchema,
-  partialValidator
+  partialValidator,
 } from "../condition/conditionSchema"
 import {ZodType} from "zod"
 import {ServerContext} from "../server/simpleServer"
@@ -22,7 +22,7 @@ export type BuilderParams<S extends ServerContext, T extends HasId> = {
  * 'skipAuth' - Condition that determines if any auth is checked
  * 'userAuth' - Condition based on a users permission to determine if they can perform an action
  * 'modelAuth' - Condition determining whether a user can perform an action for T
- * 
+ *
  * If multiple keys of 'ModelPermOption' are provided they are calculated as "Ors"
  */
 export type ModelPermOption<S extends ServerContext, T> = {
@@ -52,6 +52,15 @@ export type ModelActions<S, T> = {
   postDelete?: (item: T, clients: S) => Promise<unknown>
 }
 
+/**
+ * 
+ * @param builderInfo Information for building rest endpoints, including:
+ * Schema Validation
+ * Getter for Db collection
+ * Permissions
+ * Server actions
+ * @returns auto-generated endpoints
+ */
 export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
 ): Route<C, any, boolean>[] {
@@ -59,28 +68,28 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
     {
       path: "/:id",
       method: "get",
-      endpointBuilder: getBuilder(builderInfo)
+      endpointBuilder: getBuilder(builderInfo),
     },
     {
       path: "/query",
       method: "post",
-      endpointBuilder: queryBuilder(builderInfo)
+      endpointBuilder: queryBuilder(builderInfo),
     },
     {
       path: "/insert",
       method: "post",
-      endpointBuilder: createBuilder(builderInfo)
+      endpointBuilder: createBuilder(builderInfo),
     },
     {
       path: "/:id",
       method: "put",
-      endpointBuilder: modifyBuilder(builderInfo)
+      endpointBuilder: modifyBuilder(builderInfo),
     },
     {
       path: "/:id",
       method: "delete",
-      endpointBuilder: deleteBuilder(builderInfo)
-    }
+      endpointBuilder: deleteBuilder(builderInfo),
+    },
   ]
 }
 
@@ -100,8 +109,8 @@ const getBuilder = <T extends HasId, C extends ServerContext>(
       const item = await info.collection(client.db).findOne({
         And: [
           {_id: {Equal: id}},
-          getItemCondition(info.permissions, client, "read")
-        ]
+          getItemCondition(info.permissions, client, "read"),
+        ],
       })
 
       if (!item.success) {
@@ -111,7 +120,7 @@ const getBuilder = <T extends HasId, C extends ServerContext>(
       return res.json(
         info.actions?.prepareResponse?.(item.data, client) ?? item.data
       )
-    }
+    },
   })
 
 const queryBuilder = <T extends HasId, C extends ServerContext>(
@@ -124,7 +133,7 @@ const queryBuilder = <T extends HasId, C extends ServerContext>(
       const client = rest as unknown as C
 
       const fullQuery = {
-        And: [req.body, getItemCondition(info.permissions, client, "read")]
+        And: [req.body, getItemCondition(info.permissions, client, "read")],
       }
 
       const items = await info.collection(client.db).findMany(fullQuery)
@@ -134,7 +143,7 @@ const queryBuilder = <T extends HasId, C extends ServerContext>(
         )
       }
       return res.json(items)
-    }
+    },
   })
 
 const createBuilder = <T extends HasId, C extends ServerContext>(
@@ -168,7 +177,7 @@ const createBuilder = <T extends HasId, C extends ServerContext>(
       return res.json(
         info.actions?.prepareResponse?.(created.data, client) ?? created.data
       )
-    }
+    },
   })
 
 const modifyBuilder = <T extends HasId, C extends ServerContext>(
@@ -185,8 +194,8 @@ const modifyBuilder = <T extends HasId, C extends ServerContext>(
       const item = await info.collection(client.db).findOne({
         And: [
           {_id: {Equal: id}},
-          getItemCondition(info.permissions, client, "modify")
-        ]
+          getItemCondition(info.permissions, client, "modify"),
+        ],
       })
       if (!item.success) {
         return res.status(404).json({error: "Item not found"})
@@ -205,7 +214,7 @@ const modifyBuilder = <T extends HasId, C extends ServerContext>(
       return res.json(
         info.actions?.prepareResponse?.(updated.data, client) ?? updated.data
       )
-    }
+    },
   })
 
 const deleteBuilder = <T extends HasId, C extends ServerContext>(
@@ -222,8 +231,8 @@ const deleteBuilder = <T extends HasId, C extends ServerContext>(
       const item = await info.collection(client.db).findOne({
         And: [
           {_id: {Equal: req.params.id}},
-          getItemCondition(info.permissions, client, "delete")
-        ]
+          getItemCondition(info.permissions, client, "delete"),
+        ],
       })
       if (!item.success) {
         return res.status(404).json({error: "Not found"})
@@ -234,7 +243,7 @@ const deleteBuilder = <T extends HasId, C extends ServerContext>(
 
       await info.actions?.postDelete?.(deleted, client)
       return res.json(deleted._id)
-    }
+    },
   })
 
 const extractItemCondition = <C extends ServerContext, T extends HasId>(
@@ -288,6 +297,6 @@ const getAuthOptions = <C extends ServerContext, T extends HasId>(
   return {
     auth: (auth: C["auth"]) => {
       return extractAuthCondition(val)
-    }
+    },
   }
 }

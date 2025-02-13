@@ -9,6 +9,7 @@ export type MaybeError<T> =
   | {success: false; error: any}
 
 export type DbQueries<T extends HasId> = {
+  findOneById: (id: string) => Promise<MaybeError<T>>
   findOne: (filter: Condition<T>) => Promise<MaybeError<T>>
   findMany: (filter: Condition<T>) => Promise<T[]>
   insertOne: (item: T) => Promise<MaybeError<T>>
