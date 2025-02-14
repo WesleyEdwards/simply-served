@@ -1,9 +1,10 @@
 import {z, ZodIssue, ZodObject} from "zod"
 import {v4 as uuidv4} from "uuid"
 import {MaybeError} from "./DbClient"
+import {InvalidRequestError} from "./errorHandling"
 
 export const baseObjectSchema = z.object({
-  _id: z.string().uuid().default(uuidv4)
+  _id: z.string().uuid().default(uuidv4),
 })
 
 export type ParseError = {error: Partial<ZodIssue>}
@@ -12,23 +13,12 @@ export type SafeParsable<T> = {
   safeParse: (obj: any) => MaybeError<T>
 }
 
-export function checkValidSchema<T>(
-  body: any,
-  schema: SafeParsable<T>
-): T | ParseError {
+export function checkValidSchema<T>(body: any, schema: SafeParsable<T>): T {
   const result = schema.safeParse(body)
   if (result.success) return result.data
-  return {
-    error: result.error?.issues?.at(0) ?? {
-      message: "Unknown error in checkValidSchema"
-    }
-  }
-}
-
-export function isParseError<T extends object>(
-  body: T | {error: any}
-): body is ParseError {
-  return "error" in body
+  throw new InvalidRequestError(
+    result.error?.issues?.at(0) ?? "Error parsing body"
+  )
 }
 
 export function checkPartialValidation<T>(
@@ -42,8 +32,8 @@ export function checkPartialValidation<T>(
   }
   return {
     error: result.error?.issues?.at(0) ?? {
-      message: "Unknown error in checkPartialValidation"
-    }
+      message: "Unknown error in checkPartialValidation",
+    },
   }
 }
 

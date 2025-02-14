@@ -2,6 +2,7 @@ import express, {Express, Response, Request} from "express"
 import {Middleware, ServerContext} from "./simpleServer"
 import {BuildQueryReturn} from "../endpoints"
 import {OptionalAuth, When, WithoutAuth} from "../endpoints/types"
+import {InternalServerError} from "./errorHandling"
 
 export type EndpointBuilderType<
   C extends ServerContext,
@@ -52,6 +53,14 @@ export function controller<C extends ServerContext>(
           return next()
         }
         return endpointBuilder.fun({req, res, ...c})
+      })
+      router.use((err: any, _req: Request, res: Response, _next: any) => {
+        if (err.status) {
+          res.status(err.status).send(err.message)
+        } else {
+          res.status(500).send(new InternalServerError().message)
+        }
+        console.error(err.stack)
       })
     })
     app.use(`/${basePath}`, router)

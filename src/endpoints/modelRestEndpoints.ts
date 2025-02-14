@@ -1,5 +1,5 @@
 import {Route} from "../server/controller"
-import {DbQueries, HasId} from "../server/DbClient"
+import {DbMethods, HasId} from "../server/DbClient"
 import {Condition} from "../condition/condition"
 import {buildQuery} from "./buildQuery"
 import {
@@ -13,7 +13,7 @@ import {evalCondition} from "../condition"
 
 export type BuilderParams<S extends ServerContext, T extends HasId> = {
   validator: ZodType<T, any, any>
-  collection: (clients: S["db"]) => DbQueries<T>
+  collection: (clients: S["db"]) => DbMethods<T>
   permissions: ModelPermissions<S, T>
   actions?: ModelActions<S, T>
 }
@@ -53,7 +53,7 @@ export type ModelActions<S, T> = {
 }
 
 /**
- * 
+ *
  * @param builderInfo Information for building rest endpoints, including:
  * Schema Validation
  * Getter for Db collection
@@ -106,20 +106,17 @@ const getBuilder = <T extends HasId, C extends ServerContext>(
         return res.status(400).json("Id required")
       }
 
-      const item = await info.collection(client.db).findOne({
-        And: [
-          {_id: {Equal: id}},
-          getItemCondition(info.permissions, client, "read"),
-        ],
-      })
-
-      if (!item.success) {
-        return res.status(404).json(item)
+      try {
+        const item = await info.collection(client.db).findOne({
+          And: [
+            {_id: {Equal: id}},
+            getItemCondition(info.permissions, client, "read"),
+          ],
+        })
+        return res.json(info.actions?.prepareResponse?.(item, client) ?? item)
+      } catch {
+        return res.status(404).json({message: "Not Found"})
       }
-
-      return res.json(
-        info.actions?.prepareResponse?.(item.data, client) ?? item.data
-      )
     },
   })
 
@@ -169,14 +166,15 @@ const createBuilder = <T extends HasId, C extends ServerContext>(
         ? await info.actions.interceptCreate(body, client)
         : body
 
-      const created = await info.collection(client.db).insertOne(processed)
-
-      if (!created.success) return res.status(500).json(created)
-      await info.actions?.postCreate?.(created.data, client)
-
-      return res.json(
-        info.actions?.prepareResponse?.(created.data, client) ?? created.data
-      )
+      try {
+        const created = await info.collection(client.db).insertOne(processed)
+        await info.actions?.postCreate?.(created, client)
+        return res.json(
+          info.actions?.prepareResponse?.(created, client) ?? created
+        )
+      } catch {
+        return res.status(500).json({error: "Unable to create item"})
+      }
     },
   })
 
@@ -191,29 +189,29 @@ const modifyBuilder = <T extends HasId, C extends ServerContext>(
       const {body, params} = req
       const id = params.id
 
-      const item = await info.collection(client.db).findOne({
-        And: [
-          {_id: {Equal: id}},
-          getItemCondition(info.permissions, client, "modify"),
-        ],
-      })
-      if (!item.success) {
+      try {
+        const item = await info.collection(client.db).findOne({
+          And: [
+            {_id: {Equal: id}},
+            getItemCondition(info.permissions, client, "modify"),
+          ],
+        })
+        const intercepted =
+          (await info.actions?.interceptModify?.(item, body, client)) ?? body
+
+        const updated = await info
+          .collection(client.db)
+          .updateOne(id, intercepted)
+        // if (!updated) return res.status(400).json(body)
+
+        await info.actions?.postModify?.(updated, client)
+
+        return res.json(
+          info.actions?.prepareResponse?.(updated, client) ?? updated
+        )
+      } catch {
         return res.status(404).json({error: "Item not found"})
       }
-
-      const intercepted =
-        (await info.actions?.interceptModify?.(item.data, body, client)) ?? body
-
-      const updated = await info
-        .collection(client.db)
-        .updateOne(id, intercepted)
-      if (!updated.success) return res.status(400).json(body)
-
-      await info.actions?.postModify?.(updated.data, client)
-
-      return res.json(
-        info.actions?.prepareResponse?.(updated.data, client) ?? updated.data
-      )
     },
   })
 
@@ -228,21 +226,24 @@ const deleteBuilder = <T extends HasId, C extends ServerContext>(
       if (!req.params.id) {
         return res.status(400).json({error: "Provide a valid id"})
       }
-      const item = await info.collection(client.db).findOne({
-        And: [
-          {_id: {Equal: req.params.id}},
-          getItemCondition(info.permissions, client, "delete"),
-        ],
-      })
-      if (!item.success) {
-        return res.status(404).json({error: "Not found"})
+      try {
+        const item = await info.collection(client.db).findOne({
+          And: [
+            {_id: {Equal: req.params.id}},
+            getItemCondition(info.permissions, client, "delete"),
+          ],
+        })
+        await info.actions?.interceptDelete?.(item, client)
+
+        const deleted = await info
+          .collection(client.db)
+          .deleteOne(req.params.id)
+
+        await info.actions?.postDelete?.(deleted, client)
+        return res.json(deleted._id)
+      } catch {
+        return res.status(404).json({error: "Error deleting item"})
       }
-      await info.actions?.interceptDelete?.(item.data, client)
-
-      const deleted = await info.collection(client.db).deleteOne(req.params.id)
-
-      await info.actions?.postDelete?.(deleted, client)
-      return res.json(deleted._id)
     },
   })
 
@@ -273,7 +274,7 @@ const extractAuthCondition = <C extends ServerContext, T extends HasId>(
   return {Always: true}
 }
 
-// Can perfom action on item
+// Can perform action on item
 const getItemCondition = <C extends ServerContext, T extends HasId>(
   perms: BuilderParams<C, T>["permissions"],
   clients: C,

@@ -2,6 +2,7 @@ import {checkValidSchema, isValid, SafeParsable} from "../server/validation"
 import {EndpointBuilderType} from "../server/controller"
 import {ServerContext} from "../server/simpleServer"
 import {Condition} from "../condition"
+import {InvalidRequestError} from "../server"
 
 export type AuthOptions<C extends ServerContext> =
   | {skipAuth: true}
@@ -67,15 +68,14 @@ export function buildQuery<
     if (params.validator) {
       const valid = checkValidSchema(info.req.body, params.validator)
       if (!isValid(valid)) {
-        return info.res.status(400).json({error: valid})
+        throw new InvalidRequestError(valid ?? "Error parsing body")
       }
     }
-
     return params.fun(info)
   }
 
   return {
     fun: intermediateValidation,
-    authOptions: params.authOptions
+    authOptions: params.authOptions,
   }
 }

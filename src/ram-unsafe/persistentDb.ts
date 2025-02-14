@@ -1,5 +1,5 @@
-import {DbQueries} from "../server"
-import {DataStore} from "./DataStore"
+import {DbMethods} from "../server"
+import {LocalCollection} from "./localCollection"
 
 const fs = require("node:fs")
 
@@ -15,8 +15,8 @@ const fs = require("node:fs")
 export const persistentDb = <In extends Record<string, any[]>>(
   dbDef: In,
   dbPath?: string
-): {[K in keyof In]: DbQueries<In[K][number]>} => {
-  const db = {} as {[K in keyof In]: DbQueries<In[K][number]>}
+): {[K in keyof In]: DbMethods<In[K][number]>} => {
+  const db = {} as {[K in keyof In]: DbMethods<In[K][number]>}
 
   const path = dbPath ?? "./db-store"
 
@@ -27,7 +27,7 @@ export const persistentDb = <In extends Record<string, any[]>>(
   for (const [key, defaultItems] of Object.entries(dbDef)) {
     const file = `${path}/${key}.json`
 
-    const handler: ProxyHandler<DataStore<any>> = {
+    const handler: ProxyHandler<LocalCollection<any>> = {
       get(target, prop, receiver) {
         const value = Reflect.get(target, prop, receiver)
         if (typeof value === "function") {
@@ -58,7 +58,7 @@ export const persistentDb = <In extends Record<string, any[]>>(
       }
     }
 
-    const collection = new DataStore(parsed)
+    const collection = new LocalCollection(parsed)
     const proxy = new Proxy(collection, handler as any)
     // @ts-ignore
     db[key] = proxy

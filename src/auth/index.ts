@@ -1,2 +1,2 @@
 export * from "./verifyAuth"
-export * from "./defaultPermissions"
+export * from "./misc"
