@@ -2,13 +2,10 @@ import {Route} from "../server/controller"
 import {DbMethods, HasId} from "../server/DbClient"
 import {Condition} from "../condition/condition"
 import {buildQuery} from "./buildQuery"
-import {
-  createConditionSchema,
-  partialValidator,
-} from "../condition/conditionSchema"
+import {createConditionSchema} from "../condition/conditionSchema"
 import {ZodType} from "zod"
 import {ServerContext} from "../server/simpleServer"
-import {SafeParsable} from "../server"
+import {Parsable, partialValidator} from "../server"
 import {evalCondition} from "../condition"
 
 export type BuilderParams<S extends ServerContext, T extends HasId> = {
@@ -148,7 +145,7 @@ const createBuilder = <T extends HasId, C extends ServerContext>(
 ) =>
   buildQuery<C, T>({
     authOptions: getAuthOptions(info.permissions, "create"),
-    validator: info.validator,
+    validator: info.validator as unknown as Parsable<T>,
     fun: async ({req, res, ...rest}) => {
       const client = rest as unknown as C
       const {body} = req
@@ -183,7 +180,7 @@ const modifyBuilder = <T extends HasId, C extends ServerContext>(
 ) =>
   buildQuery<C, T>({
     authOptions: getAuthOptions(info.permissions, "modify"),
-    validator: partialValidator(info.validator) as unknown as SafeParsable<T>,
+    validator: partialValidator(info.validator) as unknown as Parsable<T>,
     fun: async ({req, res, ...rest}) => {
       const client = rest as unknown as C
       const {body, params} = req

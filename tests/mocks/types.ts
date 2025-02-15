@@ -1,4 +1,4 @@
-import {DbQueries} from "../../src"
+import {DbMethods} from "../../src"
 
 export type Todo = {
   _id: string
@@ -13,6 +13,6 @@ export type User = {
 }
 
 export type TodoDb = {
-  todo: DbQueries<Todo>
-  user: DbQueries<User>
+  todo: DbMethods<Todo>
+  user: DbMethods<User>
 }

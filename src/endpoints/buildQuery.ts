@@ -1,8 +1,7 @@
-import {checkValidSchema, isValid, SafeParsable} from "../server/validation"
+import {Parsable} from "../server/validation"
 import {EndpointBuilderType} from "../server/controller"
 import {ServerContext} from "../server/simpleServer"
 import {Condition} from "../condition"
-import {InvalidRequestError} from "../server"
 
 export type AuthOptions<C extends ServerContext> =
   | {skipAuth: true}
@@ -25,7 +24,7 @@ export function buildQuery<
   C extends ServerContext = ServerContext,
   T = any
 >(params: {
-  validator?: SafeParsable<T>
+  validator?: Parsable<T>
   fun: EndpointBuilderType<C, T, false>
   authOptions?: {auth: (auth: C["auth"]) => Condition<C["auth"]>}
 }): BuildQueryReturn<C, T, false>
@@ -37,7 +36,7 @@ export function buildQuery<
   C extends ServerContext = ServerContext,
   T = any
 >(params: {
-  validator?: SafeParsable<T>
+  validator?: Parsable<T>
   fun: EndpointBuilderType<C, T, true>
   authOptions: {skipAuth: true}
 }): BuildQueryReturn<C, T, true>
@@ -53,7 +52,7 @@ export function buildQuery<
     | {skipAuth: true}
     | {auth: (auth: C["auth"]) => Condition<C["auth"]>}
 
-  validator?: SafeParsable<T>
+  validator?: Parsable<T>
   fun: EndpointBuilderType<C, T, boolean>
 }): BuildQueryReturn<C, T, boolean>
 
@@ -66,10 +65,8 @@ export function buildQuery<
     info
   ) => {
     if (params.validator) {
-      const valid = checkValidSchema(info.req.body, params.validator)
-      if (!isValid(valid)) {
-        throw new InvalidRequestError(valid ?? "Error parsing body")
-      }
+      // Test validation
+      params.validator.parse(info.req.body)
     }
     return params.fun(info)
   }

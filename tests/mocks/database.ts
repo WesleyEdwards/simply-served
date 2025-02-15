@@ -1,8 +1,8 @@
-import {DataStore} from "../../src"
+import { LocalCollection } from "../../src"
 import {Todo, TodoDb, User} from "./types"
 
 const todoDb: TodoDb = {
-  todo: new DataStore<Todo>([
+  todo: new LocalCollection<Todo>([
     {
       _id: "5de0ee99-d552-4686-aafc-9895c5782071",
       done: false,
@@ -46,7 +46,7 @@ const todoDb: TodoDb = {
       todoItem: "Walk the dog"
     }
   ]),
-  user: new DataStore<User>([
+  user: new LocalCollection<User>([
     {_id: "df854171-5e36-47cf-b679-3258a2032b51", name: "John Doe"},
     {_id: "7565abf0-c7eb-44b7-a6e4-075e7590bc4d", name: "George Admin"},
     {_id: "d246be99-2c1e-4059-8a02-4b63e4699d42", name: "Alice Johnson"},

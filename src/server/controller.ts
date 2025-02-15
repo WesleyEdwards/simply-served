@@ -40,7 +40,6 @@ export function controller<C extends ServerContext>(
         }
         const c = middleware(req, initCxt, endpointBuilder.authOptions)
         if (c === null) {
-          console.log("Unauth")
           return res.status(401).json({message: "Unauthorized"})
         } else {
           next()

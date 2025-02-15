@@ -21,3 +21,10 @@ export class InvalidRequestError extends Error {
     this.status = 400
   }
 }
+export class ParseError extends Error {
+  status: number
+  constructor(message = "Invalid Request", status = 400) {
+    super(message)
+    this.status = status
+  }
+}
