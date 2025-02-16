@@ -59,7 +59,6 @@ export function controller<C extends ServerContext>(
         } else {
           res.status(500).send(new InternalServerError().message)
         }
-        console.error(err.stack)
       })
     })
     app.use(`/${basePath}`, router)

@@ -1,12 +1,12 @@
 import {Parsable} from "../server/validation"
 import {EndpointBuilderType} from "../server/controller"
 import {ServerContext} from "../server/simpleServer"
-import {Condition} from "../condition"
 
 export type AuthOptions<C extends ServerContext> =
-  | {skipAuth: true}
-  | {auth: (auth: C["auth"]) => Condition<C["auth"]>}
-  | undefined
+  | {type: "publicAccess"}
+  | {type: "notAllowed"}
+  | {type: "authenticated"}
+  | {type: "customAuth"; check: (auth: C["auth"]) => boolean}
 
 export type BuildQueryReturn<
   C extends ServerContext = ServerContext,
@@ -26,7 +26,9 @@ export function buildQuery<
 >(params: {
   validator?: Parsable<T>
   fun: EndpointBuilderType<C, T, false>
-  authOptions?: {auth: (auth: C["auth"]) => Condition<C["auth"]>}
+  authOptions:
+    | {type: "customAuth"; check: (auth: C["auth"]) => boolean}
+    | {type: "authenticated"}
 }): BuildQueryReturn<C, T, false>
 
 /**
@@ -38,7 +40,7 @@ export function buildQuery<
 >(params: {
   validator?: Parsable<T>
   fun: EndpointBuilderType<C, T, true>
-  authOptions: {skipAuth: true}
+  authOptions: {type: "publicAccess"}
 }): BuildQueryReturn<C, T, true>
 
 /**
@@ -48,9 +50,7 @@ export function buildQuery<
   C extends ServerContext = ServerContext,
   T = any
 >(params: {
-  authOptions?:
-    | {skipAuth: true}
-    | {auth: (auth: C["auth"]) => Condition<C["auth"]>}
+  authOptions: AuthOptions<C>
 
   validator?: Parsable<T>
   fun: EndpointBuilderType<C, T, boolean>

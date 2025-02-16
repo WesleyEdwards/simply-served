@@ -1,10 +1,28 @@
 import {z} from "zod"
 import {Parsable} from "../server/validation"
 import {ParseError} from "../server/errorHandling"
+import {Condition} from "./condition"
+
+export type Query<T> = {
+  condition: Condition<T>
+}
+
+export const createQuerySchema = <T>(
+  schema: z.ZodType<T, any, any>
+): Parsable<Query<T>> => ({
+  parse: (data: any) => {
+    if ("condition" in data) {
+      return {
+        condition: createConditionSchema(schema).parse(data.condition),
+      }
+    }
+    throw new ParseError()
+  },
+})
 
 export const createConditionSchema = <T>(
   schema: z.ZodType<T, any, any>
-): Parsable<T> => ({
+): Parsable<Condition<T>> => ({
   parse: (body: any) => {
     if (
       typeof body !== "object" ||
@@ -23,20 +41,20 @@ export const createConditionSchema = <T>(
     const key = bodyKeys[0]
 
     if (key === "Always" || key === "never") {
-      return z.object({[key]: z.literal(true)}).parse(body) as T
+      return z.object({[key]: z.literal(true)}).parse(body)
     }
 
     if (key === "Equal") {
-      return z.object({Equal: schema}).parse(body) as T
+      return z.object({Equal: schema}).parse(body)
     }
     if (key === "Inside") {
-      return z.object({Inside: schema.array()}).parse(body) as T
+      return z.object({Inside: schema.array()}).parse(body)
     }
     if (key === "ListAnyElement") {
       if (schema instanceof z.ZodArray) {
         // Test
         createConditionSchema(schema.element).parse(body[key])
-        return z.object({ListAnyElement: z.any(body[key])}).parse(body) as T
+        return z.object({ListAnyElement: z.any(body[key])}).parse(body)
       }
     }
 
@@ -49,7 +67,7 @@ export const createConditionSchema = <T>(
         // Test
         others.parse(item)
       }
-      return z.object({[key]: z.any({[key]: body[key]})}).parse(body) as T
+      return z.object({[key]: z.any({[key]: body[key]})}).parse(body)
     }
 
     if (
@@ -65,7 +83,7 @@ export const createConditionSchema = <T>(
       const subSchema = createConditionSchema((schema.shape as any)[key])
       // Test
       subSchema.parse(body[key])
-      return z.object({[key]: z.any(body[key])}).parse(body) as T
+      return z.object({[key]: z.any(body[key])}).parse(body)
     }
     throw new ParseError("Invalid condition. Options exhausted")
   },

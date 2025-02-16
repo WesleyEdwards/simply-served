@@ -28,3 +28,11 @@ export class ParseError extends Error {
     this.status = status
   }
 }
+
+export class UnauthorizedError extends Error {
+  status: number
+  constructor(message = "Unauthorized Request", status = 401) {
+    super(message)
+    this.status = status
+  }
+}

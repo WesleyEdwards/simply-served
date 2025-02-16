@@ -1,5 +1,4 @@
-import {evalCondition} from "../condition"
-import {Middleware, ServerContext} from "../server"
+import {Middleware, ServerContext, UnauthorizedError} from "../server"
 import jwt from "jsonwebtoken"
 
 const getJwtBody = (token: string, encryptionKey: string) => {
@@ -24,25 +23,27 @@ export function verifyAuth<Ctx extends ServerContext>(encryptionKey: string) {
     if (token) {
       const auth = getJwtBody(token, encryptionKey) as Ctx["auth"] | null
       if (!auth) {
-        return null
+        throw new UnauthorizedError()
       }
 
-      if (authOptions === undefined) {
+      if (
+        authOptions.type === "publicAccess" ||
+        authOptions.type === "authenticated"
+      ) {
         return {...clients, auth} as Ctx
       }
 
-      if ("auth" in authOptions) {
-        const condition = authOptions.auth(auth)
-        if (evalCondition(auth, condition)) {
+      if (authOptions.type === "customAuth") {
+        if (authOptions.check(auth)) {
           return {...clients, auth} as Ctx
         }
       }
     }
 
-    if (!!authOptions && "skipAuth" in authOptions) {
+    if (!!authOptions && authOptions.type === "publicAccess") {
       return {...clients, auth: undefined} as Ctx
     } else {
-      return null
+      throw new UnauthorizedError()
     }
   }
   return fun

@@ -14,7 +14,7 @@ export type Middleware<C extends ServerContext> = (
   req: Request,
   initCtx: WithoutAuth<C>,
   authOptions: AuthOptions<C>
-) => C | null
+) => C
 
 export type SimplyServerConfig<C extends ServerContext> = {
   initContext: WithoutAuth<C>

@@ -7,7 +7,7 @@ export const baseObjectSchema = z.object({
 })
 
 export type Parsable<T> = {
-  parse: (obj: any) => T
+  parse: (data: unknown) => T
 }
 
 export const partialValidator = <T>(

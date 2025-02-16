@@ -1,10 +1,3 @@
-export const alwaysAllowed = {
-  read: {skipAuth: {Always: true}} as const,
-  delete: {skipAuth: {Always: true}} as const,
-  create: {skipAuth: {Always: true}} as const,
-  modify: {skipAuth: {Always: true}} as const,
-}
-
 /**
  * Generates a random auth code consisting of uppercase letters
  * @param {number} [len=5] The length of the auth code
