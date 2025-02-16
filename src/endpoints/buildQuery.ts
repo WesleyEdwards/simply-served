@@ -1,6 +1,7 @@
 import {Parsable} from "../server/validation"
 import {EndpointBuilderType} from "../server/controller"
 import {ServerContext} from "../server/simpleServer"
+import {ParseError} from "../server"
 
 export type AuthOptions<C extends ServerContext> =
   | {type: "publicAccess"}
@@ -18,7 +19,7 @@ export type BuildQueryReturn<
 }
 
 /**
- * 'skipAuth?: false' indicates that auth is required for this endpoint
+ * Auth is required for this endpoint
  */
 export function buildQuery<
   C extends ServerContext = ServerContext,
@@ -32,7 +33,7 @@ export function buildQuery<
 }): BuildQueryReturn<C, T, false>
 
 /**
- * 'skipAuth: true' indicates that auth is NOT required for this endpoint
+ * Auth is NOT required for this endpoint
  */
 export function buildQuery<
   C extends ServerContext = ServerContext,
@@ -43,9 +44,6 @@ export function buildQuery<
   authOptions: {type: "publicAccess"}
 }): BuildQueryReturn<C, T, true>
 
-/**
- * whether skipAuth is true or not determines if the auth is checked
- */
 export function buildQuery<
   C extends ServerContext = ServerContext,
   T = any
@@ -65,8 +63,18 @@ export function buildQuery<
     info
   ) => {
     if (params.validator) {
-      // Test validation
-      params.validator.parse(info.req.body)
+      try {
+        // Test validation
+        params.validator.parse(info.req.body)
+      } catch (e: any) {
+        if ("message" in e) {
+          throw new ParseError(e.message)
+        }
+        if ("errors" in e && typeof e.errors === "object") {
+          // Probably Zod Error
+          throw new ParseError(JSON.stringify(e.errors))
+        }
+      }
     }
     return params.fun(info)
   }

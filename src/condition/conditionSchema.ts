@@ -20,7 +20,7 @@ export const createQuerySchema = <T>(
   },
 })
 
-export const createConditionSchema = <T>(
+const createConditionSchema = <T>(
   schema: z.ZodType<T, any, any>
 ): Parsable<Condition<T>> => ({
   parse: (body: any) => {

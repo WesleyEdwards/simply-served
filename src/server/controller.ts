@@ -20,7 +20,7 @@ export type Route<
   Body = any,
   SkipAuth extends boolean = true | false
 > = {
-  path: string
+  path: `/${string}`
   method: "post" | "put" | "get" | "delete"
   endpointBuilder: BuildQueryReturn<C, Body, SkipAuth>
 }

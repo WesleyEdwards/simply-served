@@ -32,7 +32,7 @@ export const createSimplyServer = <Cxt extends ServerContext>(
     middleware,
     controllers = {},
     beforeGenerateEndpoints = () => null,
-    afterGenerateEndpoints = () => null
+    afterGenerateEndpoints = () => null,
   } = config
 
   let registeredControllers = {...controllers}
@@ -57,6 +57,6 @@ export const createSimplyServer = <Cxt extends ServerContext>(
     middleware,
     setController,
     controllers,
-    generateEndpoints
+    generateEndpoints,
   }
 }
