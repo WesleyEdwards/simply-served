@@ -10,9 +10,9 @@ const api = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-userid": userId
+          "x-userid": userId,
         },
-        body: JSON.stringify(condition)
+        body: JSON.stringify(condition),
       }).then((res) => res.json()),
 
     insert: async (todo, userId) =>
@@ -20,15 +20,15 @@ const api = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-userid": userId
+          "x-userid": userId,
         },
-        body: JSON.stringify(todo)
+        body: JSON.stringify(todo),
       }),
 
     get: async (id, userId) =>
       await fetch(`${API_URL}/todo/${id}`, {
         method: "GET",
-        headers: {"x-userid": userId}
+        headers: {"x-userid": userId},
       }).then((res) => res.json()),
 
     update: async (id, updates, userId) =>
@@ -36,17 +36,17 @@ const api = {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "x-userid": userId
+          "x-userid": userId,
         },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(updates),
       }),
 
     delete: async (id, userId) =>
       await fetch(`${API_URL}/todo/${id}`, {
         method: "DELETE",
-        headers: {"x-userid": userId}
-      })
-  }
+        headers: {"x-userid": userId},
+      }),
+  },
 }
 
 // Fetch and display todos
@@ -57,7 +57,9 @@ async function loadTodos() {
     return
   }
 
-  const todos = await api.todo.query(userId, {owner: {Equal: userId}})
+  const todos = await api.todo.query(userId, {
+    condition: {owner: {Equal: userId}},
+  })
 
   todoList.innerHTML = ""
   todos.forEach((todo) => {
@@ -92,7 +94,7 @@ async function addTodo(event) {
       _id: crypto.randomUUID(),
       todoItem: newTodoItem,
       owner: userId,
-      done: false
+      done: false,
     },
     userId
   )

@@ -1,5 +1,5 @@
 import {Route} from "../server/controller"
-import {DbMethods, HasId} from "../server/DbClient"
+import {DbMethods, HasId} from "../server/DbMethods"
 import {Condition} from "../condition/condition"
 import {AuthOptions, buildQuery} from "./buildQuery"
 import {createQuerySchema, Query} from "../condition/conditionSchema"

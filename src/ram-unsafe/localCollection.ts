@@ -29,6 +29,10 @@ export class LocalCollection<T extends HasId> implements DbMethods<T> {
     this.items = this.items.concat(item)
     return item
   }
+  insertMany = async (items: T[]) => {
+    this.items = this.items.concat(items)
+    return items
+  }
   updateOne = async (id: string, update: Partial<T>): Promise<T> => {
     const old = this.items.find((i) => i._id === id)
     if (!old) {

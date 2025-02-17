@@ -34,7 +34,7 @@ export const persistentDb = <In extends Record<string, any[]>>(
           return (...args: any[]) => {
             const result = value.apply(target, args)
             if (
-              ["insertOne", "updateOne", "deleteOne"].includes(prop as string)
+              ["insertOne", "updateOne", "deleteOne", "insertMany"].includes(prop as string)
             ) {
               const json = JSON.stringify(target.items)
               fs.writeFile(file, json, "utf8", (err: any) => {

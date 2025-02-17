@@ -9,6 +9,7 @@ export type DbMethods<T extends HasId> = {
   findOne: (filter: Condition<T>) => Promise<T>
   findMany: (filter: Condition<T>) => Promise<T[]>
   insertOne: (item: T) => Promise<T>
+  insertMany: (items: T[]) => Promise<T[]>
   updateOne: (id: string, update: Partial<T>) => Promise<T>
   deleteOne: (id: string) => Promise<T>
 }

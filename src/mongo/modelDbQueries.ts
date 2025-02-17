@@ -1,5 +1,5 @@
 import {Collection, Filter, OptionalUnlessRequiredId} from "mongodb"
-import {HasId, DbMethods} from "../server/DbClient"
+import {HasId, DbMethods} from "../server/DbMethods"
 import {conditionToFilter} from "./conditionToFilter"
 import {Condition} from "../condition"
 import {InternalServerError, NotFoundError} from "../server"
@@ -51,6 +51,15 @@ export function mongoQueries<T extends HasId>(
       throw new InternalServerError(
         `Unable to insert item with ${newItem._id} ID`
       )
+    },
+    insertMany: async (items) => {
+      const {acknowledged} = await collection.insertMany(
+        items as OptionalUnlessRequiredId<T>[]
+      )
+      if (acknowledged) {
+        return items
+      }
+      throw new InternalServerError(`Unable to insert ${items.length} items`)
     },
     updateOne: async (id, item) => {
       const value = await collection.findOneAndUpdate(
