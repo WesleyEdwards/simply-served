@@ -1,4 +1,4 @@
-import {Condition, evalCondition} from "../condition"
+import {Condition, evalCondition, Query} from "../condition"
 import {DbMethods, HasId} from "../server"
 import {NotFoundError} from "../server/errorHandling"
 export class LocalCollection<T extends HasId> implements DbMethods<T> {
@@ -21,9 +21,11 @@ export class LocalCollection<T extends HasId> implements DbMethods<T> {
     }
     throw new NotFoundError(`item not found`)
   }
-  findMany = async (filter: Condition<T>): Promise<T[]> => {
-    const filtered = this.items.filter((item) => evalCondition(item, filter))
-    return filtered
+  findMany = async (query: Query<T>): Promise<T[]> => {
+    const filtered = this.items.filter((item) =>
+      evalCondition(item, query.condition ?? {Always: true})
+    )
+    return filtered.slice(0, query.limit ?? 100)
   }
   insertOne = async (item: T) => {
     this.items = this.items.concat(item)

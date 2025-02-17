@@ -1,7 +1,7 @@
 import {Collection, Filter, OptionalUnlessRequiredId} from "mongodb"
 import {HasId, DbMethods} from "../server/DbMethods"
 import {conditionToFilter} from "./conditionToFilter"
-import {Condition} from "../condition"
+import {Condition, Query} from "../condition"
 import {InternalServerError, NotFoundError} from "../server"
 
 /**
@@ -36,8 +36,11 @@ export function mongoQueries<T extends HasId>(
         `No item satisfying condition ${filter} could be found`
       )
     },
-    findMany: async (filter: Condition<T>) => {
-      const items = collection.find(conditionToFilter(filter))
+    findMany: async (query: Query<T>) => {
+      const c = query.condition ? conditionToFilter(query.condition) : {}
+      const items = collection.find(c, {
+        limit: query.limit ?? 100,
+      })
       return (await items.toArray()) as T[]
     },
     insertOne: async (newItem: T) => {

@@ -133,10 +133,13 @@ const queryBuilder = <C extends ServerContext, T extends HasId>(
       const client = rest as unknown as C
 
       const items = await info.collection(client.db).findMany({
-        And: [
-          req.body.condition,
-          getItemCondition(info.permissions, client, "read"),
-        ],
+        condition: {
+          And: [
+            req.body.condition ?? {Always: true},
+            getItemCondition(info.permissions, client, "read"),
+          ],
+        },
+        limit: req.body.limit,
       })
 
       if (info.actions?.prepareResponse) {

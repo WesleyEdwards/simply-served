@@ -4,7 +4,8 @@ import {ParseError} from "../server/errorHandling"
 import {Condition} from "./condition"
 
 export type Query<T> = {
-  condition: Condition<T>
+  condition?: Condition<T>
+  limit?: number
 }
 
 export const createQuerySchema = <T>(
@@ -14,9 +15,10 @@ export const createQuerySchema = <T>(
     if ("condition" in data) {
       return {
         condition: createConditionSchema(schema).parse(data.condition),
+        limit: typeof data.limit === "number" ? data.limit : undefined,
       }
     }
-    throw new ParseError()
+    return data
   },
 })
 
