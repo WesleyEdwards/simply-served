@@ -16,7 +16,7 @@ describe("Never Condition", () => {
       ["", false],
       [3, false],
       [true, false],
-      [null, false]
+      [null, false],
     ])
   })
 })
@@ -27,7 +27,7 @@ describe("Always Condition", () => {
       ["", true],
       [3, true],
       [true, true],
-      [null, true]
+      [null, true],
     ])
   })
 })
@@ -36,21 +36,21 @@ describe("Equal Condition", () => {
   test("should result in true Or false", () => {
     testCondition({Equal: "test"}, [
       ["test", true],
-      ["not", false]
+      ["not", false],
     ])
     testCondition({Equal: ""}, [["", true]])
     testCondition<any>({Equal: 3}, [
       [3, true],
       [12, false],
-      ["3", false]
+      ["3", false],
     ])
     testCondition({Equal: true}, [
       [true, true],
-      [false, false]
+      [false, false],
     ])
     testCondition({Equal: null}, [
       [null, true],
-      [undefined, false]
+      [undefined, false],
     ])
   })
 })
@@ -58,21 +58,34 @@ describe("Equal Condition", () => {
 test("Inside Condition", () => {
   testCondition({Inside: ["test", "one"]}, [
     ["test", true],
-    ["other", false]
+    ["other", false],
   ])
   testCondition({Inside: [1, 2, 3, 3]}, [
     [3, true],
     [1, true],
-    [4, false]
+    [4, false],
   ])
   testCondition({Inside: [false, true]}, [
     [true, true],
     [false, true],
-    [null, false]
+    [null, false],
   ])
   testCondition({Inside: [null, "", 4]}, [
     [null, true],
-    [5, false]
+    [5, false],
+  ])
+})
+test("StringContains", () => {
+  // testCondition({StringContains: {value: "", ignoreCase: true}}, ["", true])
+  testCondition({StringContains: {value: "", ignoreCase: true}}, [
+    ["", true],
+    ["this", true],
+  ])
+  testCondition({StringContains: {value: "test", ignoreCase: true}}, [
+    ["", true],
+    ["testing", true],
+    ["testings", true],
+    ["tes", false],
   ])
 })
 
@@ -121,21 +134,21 @@ describe("Edge Cases", () => {
 describe("Object Key Conditions", () => {
   test("should evaluate nested conditions", () => {
     const condition: Condition<Animal> = {
-      parents: {ListAnyElement: {name: {Equal: "Bella"}}}
+      parents: {ListAnyElement: {name: {Equal: "Bella"}}},
     }
     expect(evalCondition(dog_test, condition)).toBe(true)
   })
 
   test("should handle missing nested keys", () => {
     const condition: Condition<Animal> = {
-      parents: {ListAnyElement: {name: {Equal: "NotFound"}}}
+      parents: {ListAnyElement: {name: {Equal: "NotFound"}}},
     }
     expect(evalCondition(dog_test, condition)).toBe(false)
   })
 
   test("should handle empty array in conditions", () => {
     const condition: Condition<Animal> = {
-      parents: {ListAnyElement: {name: {Inside: []}}}
+      parents: {ListAnyElement: {name: {Inside: []}}},
     }
     expect(evalCondition(dog_test, condition)).toBe(false)
   })
@@ -149,10 +162,10 @@ describe("Object Key Conditions", () => {
       {
         parents: {
           ListAnyElement: {
-            And: [{gender: {Equal: "Male"}}, {_id: {Inside: ["123-father"]}}]
-          }
-        }
-      }
+            And: [{gender: {Equal: "Male"}}, {_id: {Inside: ["123-father"]}}],
+          },
+        },
+      },
     ]
 
     for (const condition of trueConditions) {

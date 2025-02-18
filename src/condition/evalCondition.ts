@@ -30,6 +30,17 @@ export function evalCondition<T>(item: T, condition: Condition<T>): boolean {
     if (!Array.isArray(item)) throw new Error("Invalid condition")
     return item.some((value) => evalCondition(value, condition.ListAnyElement))
   }
+  if ("StringContains" in condition) {
+    if (typeof item === "string") {
+      if (condition.StringContains.ignoreCase) {
+        return item
+          .toLowerCase()
+          .includes(condition.StringContains.value.toLowerCase())
+      } else {
+        return item.includes(condition.StringContains.value)
+      }
+    }
+  }
 
   if (
     typeof item === "object" &&

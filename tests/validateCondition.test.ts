@@ -50,6 +50,15 @@ describe("assures the correct schema is created from `createConditionSchema`", (
     unSuccessful({Inside: {key: "undefined"}})
   })
 
+  test("StringContains", () => {
+    successAndMatchObj({StringContains: {value: "", ignoreCase: true}})
+    successAndMatchObj({StringContains: {value: "string1", ignoreCase: false}})
+    unSuccessful({StringContains: {value: 2, ignoreCase: false}})
+    unSuccessful({StringContains: {value: ""}})
+    unSuccessful({StringContains: {ignoreCase: true}})
+    unSuccessful({StringContains: null})
+  })
+
   const validStringConditions = [
     {Always: true},
     {never: true},

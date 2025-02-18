@@ -35,6 +35,14 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
     return conditionToFilter(condition.ListAnyElement) as any
   }
 
+  if ("StringContains" in condition) {
+    acc.$text = {
+      $search: condition.StringContains.value,
+    }
+    return acc
+    // throw new Error("String contains must be ")
+  }
+
   for (const key in condition) {
     const value = condition[key]
 

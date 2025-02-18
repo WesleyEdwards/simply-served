@@ -12,17 +12,16 @@ export const createQuerySchema = <T>(
   schema: z.ZodType<T, any, any>
 ): Parsable<Query<T>> => ({
   parse: (data: any) => {
-    if ("condition" in data) {
-      return {
-        condition: createConditionSchema(schema).parse(data.condition),
-        limit: typeof data.limit === "number" ? data.limit : undefined,
-      }
+    return {
+      condition: data.condition
+        ? createConditionSchema(schema).parse(data.condition)
+        : undefined,
+      limit: typeof data.limit === "number" ? data.limit : undefined,
     }
-    return data
   },
 })
 
-const createConditionSchema = <T>(
+export const createConditionSchema = <T>(
   schema: z.ZodType<T, any, any>
 ): Parsable<Condition<T>> => ({
   parse: (body: any) => {
@@ -58,6 +57,16 @@ const createConditionSchema = <T>(
         createConditionSchema(schema.element).parse(body[key])
         return z.object({ListAnyElement: z.any(body[key])}).parse(body)
       }
+    }
+    if (key === "StringContains") {
+      return z
+        .object({
+          StringContains: z.object({
+            value: z.string(),
+            ignoreCase: z.boolean(),
+          }),
+        })
+        .parse(body)
     }
 
     if (key === "And" || key === "Or") {
