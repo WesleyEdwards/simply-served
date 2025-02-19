@@ -38,10 +38,16 @@ export function mongoQueries<T extends HasId>(
     },
     findMany: async (query: Query<T>) => {
       const c = query.condition ? conditionToFilter(query.condition) : {}
-      const items = collection.find(c, {
-        limit: query.limit ?? 100,
-      })
-      return (await items.toArray()) as T[]
+      try {
+        const items = collection.find(c, {
+          limit: query.limit ?? 100,
+        })
+        return (await items.toArray()) as T[]
+      } catch (e: any) {
+        throw new InternalServerError(
+          `Unable to query items`
+        )
+      }
     },
     insertOne: async (newItem: T) => {
       const {acknowledged} = await collection.insertOne(

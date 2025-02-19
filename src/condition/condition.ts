@@ -1,7 +1,6 @@
 /**
- * https://github.com/WesleyEdwards/simply-served/blob/main/docs/Condition.md
- *
  * Generic condition definition for filtering data
+ *  @see {@link https://github.com/WesleyEdwards/simply-served/blob/main/docs/Condition.md Condition Docs}
  */
 export type Condition<T> =
   | {Always: true}

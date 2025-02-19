@@ -76,15 +76,14 @@ test("Inside Condition", () => {
   ])
 })
 test("StringContains", () => {
-  // testCondition({StringContains: {value: "", ignoreCase: true}}, ["", true])
   testCondition({StringContains: {value: "", ignoreCase: true}}, [
     ["", true],
     ["this", true],
   ])
   testCondition({StringContains: {value: "test", ignoreCase: true}}, [
-    ["", true],
     ["testing", true],
     ["testings", true],
+    ["", false],
     ["tes", false],
   ])
 })

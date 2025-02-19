@@ -23,12 +23,11 @@ export type ModelPermissions<C extends ServerContext, T> = {
 }
 
 /**
+ * Permissions 
  * 'publicAccess' - No authentication is required
- * 'notAllowed' - This is not allowed for any user with any level of authentication
- * 'modelAuth' - Condition determining whether a user can perform an action for T
- *
- * If multiple keys of 'ModelPermOption' are provided they are calculated as "Ors"
- * WARNING: If 'skipAuth' is provided, 'userAuth' and 'modelAuth' will be ignored
+ * 'authenticated' - Permission granted to any authenticated user
+ * 'notAllowed' - Permission is Not granted to anyone
+ * 'modelAuth' - Permission granted based on the Condition provided through 'check'
  */
 export type ModelPermOption<C extends ServerContext, T> =
   | {type: "publicAccess"}
@@ -36,8 +35,6 @@ export type ModelPermOption<C extends ServerContext, T> =
   | {type: "authenticated"}
   | {type: "modelAuth"; check: (auth: C["auth"]) => Condition<T>}
 
-// No Auth Required: () => ({Always: true})
-// Never: () => ({Never: true})
 
 export type ModelActions<S, T> = {
   prepareResponse?: (items: T, clients: S) => T
@@ -55,14 +52,14 @@ export type ModelActions<S, T> = {
 
 /**
  *
- * https://github.com/WesleyEdwards/simply-served/blob/main/docs/ModelRestEndpoints.md
- *
  * @param builderInfo Information for building rest endpoints, including:
  * Schema Validation
  * Getter for Db collection
  * Permissions
  * Server actions
  * @returns auto-generated endpoints
+ * 
+ * @see {@link https://github.com/WesleyEdwards/simply-served/blob/main/docs/ModelRestEndpoints.md Model Rest Endpoints Docs}
  */
 export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>

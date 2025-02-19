@@ -2,8 +2,6 @@ import {Filter} from "mongodb"
 import {Condition} from "../condition/condition"
 
 export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
-  const acc: Filter<T> = {}
-
   if ("Equal" in condition) {
     return condition.Equal as Filter<T>
   }
@@ -14,18 +12,18 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
     return {_id: false} as Filter<T>
   }
   if ("Or" in condition) {
-    acc.$or = condition.Or.map((cond) => conditionToFilter(cond)) as any
-    return acc
+    return {
+      $or: condition.Or.map((cond) => conditionToFilter(cond)) as any,
+    }
   }
 
   if ("And" in condition) {
-    acc.$and = condition.And.map((cond) => conditionToFilter(cond)) as any
-    return acc
+    return {$and: condition.And.map((cond) => conditionToFilter(cond)) as any}
   }
 
   if ("Always" in condition) {
     if (condition.Always) {
-      return acc
+      return {}
     } else {
       throw new Error("Invalid 'always' condition. It must be true.")
     }
@@ -36,11 +34,12 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
   }
 
   if ("StringContains" in condition) {
-    acc.$text = {
-      $search: condition.StringContains.value,
+    return {
+      $regex: new RegExp(
+        condition.StringContains.value,
+        condition.StringContains.ignoreCase ? "i" : "g"
+      ),
     }
-    return acc
-    // throw new Error("String contains must be ")
   }
 
   for (const key in condition) {
@@ -51,9 +50,11 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
     }
 
     if (value && typeof value === "object") {
-      acc[key as keyof Filter<T>] = conditionToFilter(value as any)
+      return {
+        [key]: conditionToFilter(value),
+      } as any
     }
   }
 
-  return acc
+  throw new Error("Invalid condition")
 }
