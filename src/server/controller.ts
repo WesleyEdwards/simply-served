@@ -1,6 +1,6 @@
 import express, {Express, Response, Request} from "express"
 import {Middleware, ServerContext} from "./simpleServer"
-import {AuthOptions, BuildQueryReturn} from "../endpoints"
+import {AuthOptions} from "../endpoints"
 import {OptionalAuth, When, WithoutAuth} from "../endpoints/types"
 import {InternalServerError} from "./errorHandling"
 
@@ -19,10 +19,15 @@ export type Route<
   C extends ServerContext = ServerContext,
   Body = any,
   A extends AuthOptions<C> = any
-> = BuildQueryReturn<C, Body, A>
+> = {
+  fun: EndpointBuilderType<C, Body, A>
+  authOptions: AuthOptions<C>
+  path: `/${string}`
+  method: "post" | "put" | "get" | "delete"
+}
 
 export function controller<C extends ServerContext>(
-  basePath: string,
+  basePath: `/${string}`,
   routes: Route<C>[]
 ) {
   return (app: Express, initCxt: WithoutAuth<C>, middleware: Middleware<C>) => {
@@ -58,7 +63,7 @@ export function controller<C extends ServerContext>(
         }
       })
     })
-    app.use(`/${basePath}`, router)
+    app.use(basePath, router)
   }
 }
 

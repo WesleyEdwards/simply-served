@@ -1,7 +1,7 @@
 import {Parsable} from "../server/validation"
-import {EndpointBuilderType} from "../server/controller"
-import {ServerContext} from "../server/simpleServer"
-import {ParseError} from "../server"
+import {EndpointBuilderType, Route} from "../server/controller"
+import {Controller, ServerContext} from "../server/simpleServer"
+import {BuilderParams, HasId, modelRestEndpoints, ParseError} from "../server"
 
 export type AuthOptions<C extends ServerContext> =
   | {type: "publicAccess"}
@@ -9,26 +9,13 @@ export type AuthOptions<C extends ServerContext> =
   | {type: "authenticated"}
   | {type: "customAuth"; check: (auth: C["auth"]) => boolean}
 
-export type BuildQueryReturn<
-  C extends ServerContext = ServerContext,
-  T = any,
-  A extends AuthOptions<C> = any
-> = {
-  fun: EndpointBuilderType<C, T, A>
-  authOptions: AuthOptions<C>
-  path: `/${string}`
-  method: "post" | "put" | "get" | "delete"
-}
-
 type BuildType<C extends ServerContext, T, A extends AuthOptions<C>> = (
   params: EndpointBuilderType<C, T, A>
-) => BuildQueryReturn<C, T, A>
+) => Route<C, T, A>
 
 type OptionsType<C extends ServerContext> = <
-  T = any,
-  A extends AuthOptions<C> = {
-    type: "authenticated"
-  }
+  T,
+  A extends AuthOptions<C>
 >(params: {
   validator?: Parsable<T>
   authOptions: A
@@ -65,3 +52,23 @@ export function buildQuery<C extends ServerContext = ServerContext>(params: {
     }),
   }
 }
+
+// Functions for typing niceness
+export const createControllers = <C extends ServerContext>(
+  builder: (builders: {
+    createController: (x: Controller<C>) => Controller<C>
+  }) => Controller<C>[]
+): Controller<C>[] => builder({createController: (controller) => controller})
+
+export const createRoutes = <C extends ServerContext>(
+  builder: (builders: {
+    createRoute: typeof buildQuery<C>
+    createModelRestEndpoints: <T extends HasId>(
+      x: BuilderParams<C, T>
+    ) => Route<C>[]
+  }) => Route<C>[]
+): Route<C>[] =>
+  builder({
+    createRoute: buildQuery,
+    createModelRestEndpoints: (x) => modelRestEndpoints(x),
+  })

@@ -5,7 +5,7 @@ import {AuthOptions, buildQuery} from "./buildQuery"
 import {createQuerySchema} from "../condition/conditionSchema"
 import {ZodType} from "zod"
 import {ServerContext} from "../server/simpleServer"
-import {Parsable, partialValidator} from "../server"
+import {partialValidator} from "../server"
 import {evalCondition} from "../condition"
 
 export type BuilderParams<C extends ServerContext, T extends HasId> = {
@@ -64,13 +64,12 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
 ): Route<C, any, any>[] {
   return [
-    buildQuery({
+    buildQuery<C>({
       path: "/:id",
       method: "get",
     })
       .options({
         authOptions: getAuthOptions(builderInfo.permissions, "read"),
-        validator: undefined,
       })
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
@@ -94,7 +93,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           return res.status(404).json({message: "Not Found"})
         }
       }),
-    buildQuery({
+    buildQuery<C>({
       path: "/query",
       method: "post",
     })
@@ -124,13 +123,13 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         }
         return res.json(items)
       }),
-    buildQuery({
+    buildQuery<C>({
       path: "/insert",
       method: "post",
     })
       .options({
         authOptions: getAuthOptions(builderInfo.permissions, "create"),
-        validator: builderInfo.validator as unknown as Parsable<T>,
+        validator: builderInfo.validator,
       })
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
@@ -161,15 +160,13 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           return res.status(500).json({error: "Unable to create item"})
         }
       }),
-    buildQuery({
+    buildQuery<C>({
       path: "/:id",
       method: "put",
     })
       .options({
         authOptions: getAuthOptions(builderInfo.permissions, "modify"),
-        validator: partialValidator(
-          builderInfo.validator
-        ) as unknown as Parsable<T>,
+        validator: partialValidator(builderInfo.validator),
       })
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
@@ -196,7 +193,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           builderInfo.actions?.prepareResponse?.(updated, client) ?? updated
         )
       }),
-    buildQuery({
+    buildQuery<C>({
       path: "/:id",
       method: "delete",
     })
