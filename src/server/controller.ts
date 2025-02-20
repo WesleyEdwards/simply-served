@@ -1,29 +1,25 @@
 import express, {Express, Response, Request} from "express"
 import {Middleware, ServerContext} from "./simpleServer"
-import {BuildQueryReturn} from "../endpoints"
+import {AuthOptions, BuildQueryReturn} from "../endpoints"
 import {OptionalAuth, When, WithoutAuth} from "../endpoints/types"
 import {InternalServerError} from "./errorHandling"
 
 export type EndpointBuilderType<
   C extends ServerContext,
   Body,
-  SkipAuth extends boolean
+  A extends AuthOptions<C>
 > = (
   info: {
     req: Request<any, any, Body>
     res: Response
-  } & When<SkipAuth, OptionalAuth<C>, C>
+  } & When<DisableAuth<A>, OptionalAuth<C>, C>
 ) => Promise<Response<any, Record<string, any>>>
 
 export type Route<
   C extends ServerContext = ServerContext,
   Body = any,
-  SkipAuth extends boolean = true | false
-> = {
-  path: `/${string}`
-  method: "post" | "put" | "get" | "delete"
-  endpointBuilder: BuildQueryReturn<C, Body, SkipAuth>
-}
+  A extends AuthOptions<C> = any
+> = BuildQueryReturn<C, Body, A>
 
 export function controller<C extends ServerContext>(
   basePath: string,
@@ -32,13 +28,14 @@ export function controller<C extends ServerContext>(
   return (app: Express, initCxt: WithoutAuth<C>, middleware: Middleware<C>) => {
     const router = express.Router()
     routes.forEach((route) => {
-      const endpointBuilder = route.endpointBuilder
+      const {authOptions, method, fun, path} = route
+
       router.use(route.path, async (req, res, next): Promise<any> => {
         const sameMethod = req.method.toLowerCase() === route.method
         if (!sameMethod) {
           return next()
         }
-        const c = middleware(req, initCxt, endpointBuilder.authOptions)
+        const c = middleware(req, initCxt, authOptions)
         if (c === null) {
           return res.status(401).json({message: "Unauthorized"})
         } else {
@@ -46,12 +43,12 @@ export function controller<C extends ServerContext>(
         }
         return null
       })
-      router[route.method](route.path, async (req, res, next): Promise<any> => {
-        const c: any = middleware(req, initCxt, endpointBuilder.authOptions)
+      router[method](path, async (req, res, next): Promise<any> => {
+        const c: any = middleware(req, initCxt, authOptions)
         if (c === null) {
           return next()
         }
-        return endpointBuilder.fun({req, res, ...c})
+        return fun({req, res, ...c})
       })
       router.use((err: any, _req: Request, res: Response, _next: any) => {
         if (err.status) {
@@ -64,3 +61,7 @@ export function controller<C extends ServerContext>(
     app.use(`/${basePath}`, router)
   }
 }
+
+type DisableAuth<T extends AuthOptions<any>> = T["type"] extends "publicAccess"
+  ? true
+  : false

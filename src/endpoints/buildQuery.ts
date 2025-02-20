@@ -12,75 +12,56 @@ export type AuthOptions<C extends ServerContext> =
 export type BuildQueryReturn<
   C extends ServerContext = ServerContext,
   T = any,
-  SkipAuth extends boolean = false
+  A extends AuthOptions<C> = any
 > = {
-  fun: EndpointBuilderType<C, T, SkipAuth>
+  fun: EndpointBuilderType<C, T, A>
   authOptions: AuthOptions<C>
+  path: `/${string}`
+  method: "post" | "put" | "get" | "delete"
 }
 
-/**
- * Auth is required for this endpoint
- */
-export function buildQuery<
-  C extends ServerContext = ServerContext,
-  T = any
->(params: {
-  validator?: Parsable<T>
-  fun: EndpointBuilderType<C, T, false>
-  authOptions:
-    | {type: "customAuth"; check: (auth: C["auth"]) => boolean}
-    | {type: "authenticated"}
-}): BuildQueryReturn<C, T, false>
+type BuildType<C extends ServerContext, T, A extends AuthOptions<C>> = (
+  params: EndpointBuilderType<C, T, A>
+) => BuildQueryReturn<C, T, A>
 
-/**
- * Auth is NOT required for this endpoint
- */
-export function buildQuery<
-  C extends ServerContext = ServerContext,
-  T = any
->(params: {
-  validator?: Parsable<T>
-  fun: EndpointBuilderType<C, T, true>
-  authOptions: {type: "publicAccess"}
-}): BuildQueryReturn<C, T, true>
-
-export function buildQuery<
-  C extends ServerContext = ServerContext,
-  T = any
->(params: {
-  authOptions: AuthOptions<C>
-
-  validator?: Parsable<T>
-  fun: EndpointBuilderType<C, T, boolean>
-}): BuildQueryReturn<C, T, boolean>
-
-export function buildQuery<
-  C extends ServerContext = ServerContext,
+type OptionsType<C extends ServerContext> = <
   T = any,
-  SkipAuth extends boolean = true | false
->(params: any): BuildQueryReturn<C, T, SkipAuth> {
-  const intermediateValidation: EndpointBuilderType<C, T, SkipAuth> = async (
-    info
-  ) => {
-    if (params.validator) {
-      try {
-        // Test validation
-        params.validator.parse(info.req.body)
-      } catch (e: any) {
-        if ("message" in e) {
-          throw new ParseError(e.message)
-        }
-        if ("errors" in e && typeof e.errors === "object") {
-          // Probably Zod Error
-          throw new ParseError(JSON.stringify(e.errors))
-        }
-      }
-    }
-    return params.fun(info)
+  A extends AuthOptions<C> = {
+    type: "authenticated"
   }
+>(params: {
+  validator?: Parsable<T>
+  authOptions: A
+}) => {
+  build: BuildType<C, T, A>
+}
 
+export function buildQuery<C extends ServerContext = ServerContext>(params: {
+  path: `/${string}`
+  method: "post" | "put" | "get" | "delete"
+}): {
+  options: OptionsType<C>
+} {
   return {
-    fun: intermediateValidation,
-    authOptions: params.authOptions,
+    options: (optionsParams) => ({
+      build: (builder) => ({
+        authOptions: optionsParams.authOptions,
+        fun: (info) => {
+          if (optionsParams.validator) {
+            try {
+              // Test validation
+              optionsParams.validator.parse(info.req.body)
+            } catch (e: any) {
+              if ("message" in e) {
+                throw new ParseError(e.message)
+              }
+            }
+          }
+          return builder(info)
+        },
+        method: params.method,
+        path: params.path,
+      }),
+    }),
   }
 }

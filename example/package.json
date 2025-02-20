@@ -10,15 +10,14 @@
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
-    "simply-served": "1.0.2",
     "express": "^5.0.0",
     "mongodb": "^6.12.0",
-    "zod": "^3.24.1"
+    "simply-served": "1.0.5",
+    "zod": "3.21.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.0-beta"
   }
 }
