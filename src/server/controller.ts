@@ -7,10 +7,11 @@ import {InternalServerError} from "./errorHandling"
 export type EndpointBuilderType<
   C extends ServerContext,
   Body,
-  A extends AuthOptions<C>
+  A extends AuthOptions<C> | undefined
 > = (
   info: {
     req: Request<any, any, Body>
+    body: Body
     res: Response
   } & When<DisableAuth<A>, OptionalAuth<C>, C>
 ) => Promise<Response<any, Record<string, any>>>
@@ -67,6 +68,8 @@ export function controller<C extends ServerContext>(
   }
 }
 
-type DisableAuth<T extends AuthOptions<any>> = T["type"] extends "publicAccess"
+type DisableAuth<T extends AuthOptions<any> | undefined> = T extends undefined
+  ? true
+  : T extends {type: "publicAccess"}
   ? true
   : false

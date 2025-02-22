@@ -1,6 +1,7 @@
 import {z} from "zod"
 import express from "express"
 import {
+  buildQuery,
   createControllers,
   createRoutes,
   createSimplyServer,
@@ -45,6 +46,23 @@ export const getMockServer = () => {
               },
             },
           }),
+          buildQuery<MockCtx>({
+            path: "/",
+            method: "post",
+          })
+            .withAuth({type: "authenticated"})
+            .withBody({
+              validator: z.object({
+                _id: z.string().uuid(),
+                todoItem: z.string(),
+                owner: z.string().uuid(),
+                done: z.boolean().default(true),
+              }),
+            })
+            .build(({body}) => {
+              body
+              throw new Error("")
+            }),
         ]),
       }),
       createController({
@@ -72,7 +90,7 @@ export const getMockServer = () => {
       }),
     ]),
     afterGenerateEndpoints: (app) => {
-      mockApp.use("/", async (_req, res): Promise<any> => {
+      app.use("/", async (_req, res): Promise<any> => {
         return res.status(200).json("Welcome to my server!")
       })
     },
