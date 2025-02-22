@@ -64,13 +64,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
 ): Route<C, any, any>[] {
   return [
-    buildQuery<C>({
-      path: "/:id",
-      method: "get",
-    })
-      .options({
-        authOptions: getAuthOptions(builderInfo.permissions, "read"),
-      })
+    buildQuery<C>({path: "/:id", method: "get"})
+      .withAuth(getAuthOptions(builderInfo.permissions, "read"))
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
         const {params} = req
@@ -93,14 +88,9 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           return res.status(404).json({message: "Not Found"})
         }
       }),
-    buildQuery<C>({
-      path: "/query",
-      method: "post",
-    })
-      .options({
-        authOptions: getAuthOptions(builderInfo.permissions, "read"),
-        validator: createQuerySchema(builderInfo.validator),
-      })
+    buildQuery<C>({path: "/query", method: "post"})
+      .withAuth(getAuthOptions(builderInfo.permissions, "read"))
+      .withBody({validator: createQuerySchema(builderInfo.validator)})
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
 
@@ -123,14 +113,9 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         }
         return res.json(items)
       }),
-    buildQuery<C>({
-      path: "/insert",
-      method: "post",
-    })
-      .options({
-        authOptions: getAuthOptions(builderInfo.permissions, "create"),
-        validator: builderInfo.validator,
-      })
+    buildQuery<C>({path: "/insert", method: "post"})
+      .withAuth(getAuthOptions(builderInfo.permissions, "create"))
+      .withBody({validator: builderInfo.validator})
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
         const {body} = req
@@ -160,14 +145,9 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           return res.status(500).json({error: "Unable to create item"})
         }
       }),
-    buildQuery<C>({
-      path: "/:id",
-      method: "put",
-    })
-      .options({
-        authOptions: getAuthOptions(builderInfo.permissions, "modify"),
-        validator: partialValidator(builderInfo.validator),
-      })
+    buildQuery<C>({path: "/:id", method: "put"})
+      .withAuth(getAuthOptions(builderInfo.permissions, "modify"))
+      .withBody({validator: partialValidator(builderInfo.validator)})
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
         const {body, params} = req
@@ -193,14 +173,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           builderInfo.actions?.prepareResponse?.(updated, client) ?? updated
         )
       }),
-    buildQuery<C>({
-      path: "/:id",
-      method: "delete",
-    })
-      .options({
-        authOptions: getAuthOptions(builderInfo.permissions, "delete"),
-        validator: undefined,
-      })
+    buildQuery<C>({path: "/:id", method: "delete"})
+      .withAuth(getAuthOptions(builderInfo.permissions, "delete"))
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
 

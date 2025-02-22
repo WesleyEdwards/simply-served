@@ -93,7 +93,7 @@ export const createControllers = <C extends ServerContext>(
   builder: (builders: {
     createController: (x: Controller<C>) => Controller<C>
   }) => Controller<C>[]
-): Controller<C>[] => builder({createController: (controller) => controller})
+): Controller<C>[] => builder({createController: (c) => c})
 
 export const createRoutes = <C extends ServerContext>(
   builder: (builders: {
@@ -105,5 +105,5 @@ export const createRoutes = <C extends ServerContext>(
 ): Route<C, any, any>[] =>
   builder({
     createRoute: buildQuery,
-    createModelRestEndpoints: (x) => modelRestEndpoints(x),
+    createModelRestEndpoints: modelRestEndpoints,
   })
