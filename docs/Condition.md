@@ -15,6 +15,11 @@ type Condition<T> =
   | {Or: Array<Condition<T>>}
   | {And: Array<Condition<T>>}
   | {ListAnyElement: T extends (infer U)[] ? Condition<U> : never}
+  | {
+      StringContains: T extends string
+        ? {value: string; ignoreCase: boolean}
+        : never
+    }
   | {[P in keyof T]?: Condition<T[P]>}
 ```
 
@@ -107,7 +112,17 @@ The `Condition<T>` object supports the following properties:
   evalCondition([10, 20, 30], condition) // false
   ```
 
-### 8. Nested Conditions
+### 8. `ListAnyElement`
+
+- **Description**: Evaluates to `true` if the `item` is a string and contains the 'value'. Analogous to JavaScript's `.includes()` function
+- **Example**:
+  ```typescript
+  const condition = {StringContains: {value: "Hello", ignoreCase: false}}
+  evalCondition("Hello world", condition) // true
+  evalCondition("world", condition) // false
+  ```
+
+### 9. Nested Conditions
 
 - **Description**: Evaluates nested object conditions.
 - **Example**:
@@ -116,32 +131,6 @@ The `Condition<T>` object supports the following properties:
   evalCondition({name: "Alice", age: 25}, condition) // true
   evalCondition({name: "Bob", age: 25}, condition) // false
   ```
-
-## Error Handling
-
-### Invalid Conditions
-
-Common pitfalls while constructing conditions include the folowing:
-
-- `item` is not an array when a `ListAnyElement` condition is used.
-  ```typescript
-  const condition = {ListAnyElement: {Equal: 42}}
-  evalCondition(42, condition) // Throws Error: "Invalid condition"
-  ```
-  - Incorrect data type
-  ```typescript
-  const condition: Condition<number> = {Equal: "not a number"} // Invalid condition
-  ```
-  - Too many keys in nested object condition. In order to not cause confusion between `And` and `Or` condition criteria, each object condition may only have **one** key. Instead, use the `And` or `Or` condition.
-  ```typescript
-  const condition = {name: {Equal: "Alice"}}
-  ```
-
-## Utility Functions
-
-### `areEqual`
-
-The `Inside` condition relies on a utility function `areEqual` for comparing values. This can be customized to support deep equality checks if necessary.
 
 ## Examples
 
