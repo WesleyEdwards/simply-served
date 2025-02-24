@@ -9,24 +9,51 @@ export type AuthOptions<C extends ServerContext> =
   | {type: "authenticated"}
   | {type: "customAuth"; check: (auth: C["auth"]) => boolean}
 
-type BodyOptions1<C extends ServerContext> = <
-  Auth extends AuthOptions<C>,
+type Method = "get" | "put" | "post" | "delete"
+
+type BodyBuilder<C extends ServerContext, Auth extends AuthOptions<C>> = <
   Body1
 >(params: {
   validator: Parsable<Body1>
 }) => {
   build: (params: EndpointBuilderType<C, Body1, Auth>) => Route<C, Body1, Auth>
 }
-
 type BuildType<C extends ServerContext, Body1, Auth extends AuthOptions<C>> = (
   params: EndpointBuilderType<C, Body1, Auth>
 ) => Route<C, Body1, Auth>
 
-type Method = "get" | "put" | "post" | "delete"
+type Builder<C extends ServerContext> = {
+  withAuth: <Auth extends AuthOptions<C>>(
+    authOptions: Auth
+  ) => {
+    withBody: BodyBuilder<C, Auth>
+    build: BuildType<C, unknown, Auth>
+  }
+  withBody: BodyBuilder<C, {type: "publicAccess"}>
+  build: BuildType<C, unknown, {type: "publicAccess"}>
+}
 
-function withBody<C extends ServerContext>(
+type BuildParams = {
+  path: `/${string}`
+  method: Method
+}
+
+function createBuilder<
+  C extends ServerContext,
+  Body1,
+  Auth extends AuthOptions<C>
+>(params: BuildParams & {authOptions: Auth}): BuildType<C, Body1, Auth> {
+  return (builder) => ({
+    authOptions: params.authOptions,
+    method: params.method,
+    path: params.path,
+    fun: builder,
+  })
+}
+
+function withBody<C extends ServerContext, Auth extends AuthOptions<C>>(
   params: BuildParams & {authOptions: AuthOptions<C>}
-): BodyOptions1<C> {
+): BodyBuilder<C, Auth> {
   return (optionsParams) => ({
     build: (builder) => ({
       authOptions: params.authOptions,
@@ -45,36 +72,6 @@ function withBody<C extends ServerContext>(
     }),
   })
 }
-
-type Builder<C extends ServerContext> = {
-  withAuth: <Auth extends AuthOptions<C>>(
-    authOptions: Auth
-  ) => {
-    withBody: BodyOptions1<C>
-    build: BuildType<C, unknown, Auth>
-  }
-  withBody: <Body1>(params: {validator: Parsable<Body1>}) => {
-    build: BuildType<C, Body1, {type: "publicAccess"}>
-  }
-  build: BuildType<C, unknown, {type: "publicAccess"}>
-}
-
-type BuildParams = {
-  path: `/${string}`
-  method: Method
-}
-
-const createBuilder =
-  <C extends ServerContext, Body1, Auth extends AuthOptions<C>>(
-    params: BuildParams & {authOptions: Auth}
-  ): BuildType<C, Body1, Auth> =>
-  (builder) => ({
-    authOptions: params.authOptions,
-    method: params.method,
-    path: params.path,
-    fun: builder,
-  })
-
 export function buildQuery<C extends ServerContext>(
   params: BuildParams
 ): Builder<C> {

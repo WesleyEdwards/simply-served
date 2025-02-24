@@ -18,7 +18,7 @@ const builders = [
   buildQuery<Ctx>({path: "/p", method: "get"})
     .withAuth({type: "customAuth", check: () => true})
     .build(({auth}) => {
-      auth
+      auth.permissions
       return Promise.reject()
     }),
 
@@ -43,19 +43,29 @@ const builders = [
     }),
   buildQuery<Ctx>({path: "/my-todos", method: "get"})
     .withAuth({type: "authenticated"})
-    // .withBody({
-    //   validator: z.object({
-    //     _id: z.string().uuid(),
-    //     todoItem: z.string(),
-    //     owner: z.string().uuid(),
-    //     done: z.boolean().default(true),
-    //   }),
-    // })
+    .withBody({
+      validator: z.object({
+        _id: z.string().uuid(),
+        todoItem: z.string(),
+        owner: z.string().uuid(),
+        done: z.boolean().default(true),
+      }),
+    })
     .build(async ({res, db, auth, req}) => {
       req.body
-    //   const myTodos = await db.todo.findMany({
-    //     condition: {owner: {Equal: auth.userId}},
-    //   })
+      //   const myTodos = await db.todo.findMany({
+      //     condition: {owner: {Equal: auth.userId}},
+      //   })
       throw new Error("")
+    }),
+
+  buildQuery<Ctx>({path: "/", method: "post"})
+    .withAuth({type: "authenticated"})
+    .withBody({
+      validator: z.object({levels: z.array(z.string())}),
+    })
+    .build(async ({req, res, db, auth}) => {
+      auth
+      return res.json({})
     }),
 ]
