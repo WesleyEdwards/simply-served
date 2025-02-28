@@ -68,21 +68,8 @@ const server = createSimplyServer<ServerCtx>({
             delete: {type: "publicAccess"},
           },
         }),
-        createRoute({path: "/", method: "post"})
-          .withAuth({type: "authenticated"})
-          .withBody({
-            validator: z.object({
-              _id: z.string().uuid(),
-              todoItem: z.string(),
-              owner: z.string().uuid(),
-              done: z.boolean().default(true),
-            }),
-          })
-          .build((a) => {
-            a.body
-            return "" as any
-          }),
-        createRoute({path: "/my-todos", method: "get"})
+        createRoute("get")
+          .path("/my-todos")
           .withAuth({type: "authenticated"})
           .build(async ({res, db, auth, req}) => {
             req.body

@@ -11,38 +11,60 @@ export type AuthOptions<C extends ServerContext> =
 
 type Method = "get" | "put" | "post" | "delete"
 
-type BodyBuilder<C extends ServerContext, Auth extends AuthOptions<C>> = <
-  Body1
->(params: {
-  validator: Parsable<Body1>
-}) => {
-  build: (params: EndpointBuilderType<C, Body1, Auth>) => Route<C, Body1, Auth>
+type BodyBuilder<
+  C extends ServerContext,
+  P extends Path,
+  Auth extends AuthOptions<C>
+> = <Body1>(params: {validator: Parsable<Body1>}) => {
+  build: (
+    params: EndpointBuilderType<C, P, Body1, Auth>
+  ) => Route<C, P, Body1, Auth>
 }
-type BuildType<C extends ServerContext, Body1, Auth extends AuthOptions<C>> = (
-  params: EndpointBuilderType<C, Body1, Auth>
-) => Route<C, Body1, Auth>
 
-type Builder<C extends ServerContext> = {
+type BuildType<
+  C extends ServerContext,
+  P extends Path,
+  Body1,
+  Auth extends AuthOptions<C>
+> = (params: EndpointBuilderType<C, P, Body1, Auth>) => Route<C, P, Body1, Auth>
+
+type BodyAndBuild<
+  C extends ServerContext,
+  P extends Path,
+  Auth extends AuthOptions<C>
+> = {
+  withBody: BodyBuilder<C, P, Auth>
+  build: BuildType<C, P, unknown, Auth>
+}
+
+type NewType1<C extends ServerContext, P extends Path> = {
   withAuth: <Auth extends AuthOptions<C>>(
     authOptions: Auth
-  ) => {
-    withBody: BodyBuilder<C, Auth>
-    build: BuildType<C, unknown, Auth>
-  }
-  withBody: BodyBuilder<C, {type: "publicAccess"}>
-  build: BuildType<C, unknown, {type: "publicAccess"}>
+  ) => BodyAndBuild<C, P, Auth>
+  withBody: BodyBuilder<C, P, {type: "publicAccess"}>
+  build: BuildType<C, P, unknown, {type: "publicAccess"}>
 }
 
-type BuildParams = {
-  path: `/${string}`
-  method: Method
+type Builder<C extends ServerContext> = {
+  path: (
+    route: `/${string}`
+  ) => NewType1<C, {type: "route"; route: `/${string}`}>
+
+  idPath: () => NewType1<C, {type: "id"}>
 }
+
+export type Path = {type: "id"} | {type: "route"; route: `/${string}`}
 
 function createBuilder<
   C extends ServerContext,
+  P extends Path,
   Body1,
   Auth extends AuthOptions<C>
->(params: BuildParams & {authOptions: Auth}): BuildType<C, Body1, Auth> {
+>(params: {
+  method: Method
+  authOptions: Auth
+  path: P
+}): BuildType<C, P, Body1, Auth> {
   return (builder) => ({
     authOptions: params.authOptions,
     method: params.method,
@@ -51,9 +73,15 @@ function createBuilder<
   })
 }
 
-function withBody<C extends ServerContext, Auth extends AuthOptions<C>>(
-  params: BuildParams & {authOptions: AuthOptions<C>}
-): BodyBuilder<C, Auth> {
+function withBody<
+  C extends ServerContext,
+  P extends Path,
+  Auth extends AuthOptions<C>
+>(params: {
+  method: Method
+  authOptions: AuthOptions<C>
+  path: P
+}): BodyBuilder<C, P, Auth> {
   return (optionsParams) => ({
     build: (builder) => ({
       authOptions: params.authOptions,
@@ -67,21 +95,64 @@ function withBody<C extends ServerContext, Auth extends AuthOptions<C>>(
             throw new ParseError(`Invalid request body: ${e.message}`)
           }
         }
-        return builder(info)
+        return builder(info) // todo
       },
     }),
   })
 }
+
 export function buildQuery<C extends ServerContext>(
-  params: BuildParams
+  method: Method
 ): Builder<C> {
   return {
-    withAuth: (authOptions) => ({
-      withBody: withBody({...params, authOptions: authOptions}),
-      build: createBuilder({...params, authOptions: authOptions}),
+    path: (params1) => ({
+      withAuth: (authOptions) => ({
+        withBody: withBody({
+          method: method,
+          path: {type: "route", route: params1},
+          authOptions: authOptions,
+        }),
+        build: createBuilder({
+          method: method,
+          path: {type: "route", route: params1},
+          authOptions: authOptions,
+        }),
+      }),
+      withBody: withBody({
+        method,
+        path: {type: "route", route: params1},
+        authOptions: {type: "publicAccess"},
+      }),
+      build: createBuilder({
+        method,
+        path: {type: "route", route: params1},
+        authOptions: {type: "publicAccess"},
+      }),
     }),
-    withBody: withBody({...params, authOptions: {type: "publicAccess"}}),
-    build: createBuilder({...params, authOptions: {type: "publicAccess"}}),
+    idPath: () => ({
+      withAuth: (authOptions) => ({
+        withBody: withBody({
+          method,
+          path: {type: "id"},
+          authOptions: authOptions,
+        }),
+        build: createBuilder({
+          method,
+          path: {type: "id"},
+          authOptions: authOptions,
+        }),
+      }),
+      withBody: withBody({
+        method,
+        path: {type: "id"},
+        authOptions: {type: "publicAccess"},
+      }),
+      build: createBuilder({
+        method,
+        path: {type: "id"},
+        authOptions: {type: "publicAccess"},
+      }),
+    }),
   }
 }
 

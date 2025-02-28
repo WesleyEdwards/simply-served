@@ -46,10 +46,8 @@ export const getMockServer = () => {
               },
             },
           }),
-          buildQuery<MockCtx>({
-            path: "/",
-            method: "post",
-          })
+          buildQuery<MockCtx>("post")
+            .path("/")
             .withAuth({type: "authenticated"})
             .withBody({
               validator: z.object({

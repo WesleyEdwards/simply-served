@@ -15,33 +15,37 @@ type Ctx = {
 }
 
 const builders = [
-  buildQuery<Ctx>({path: "/p", method: "get"})
+  buildQuery<Ctx>("get")
+    .idPath()
     .withAuth({type: "customAuth", check: () => true})
     .build(({auth}) => {
       auth.permissions
       return Promise.reject()
     }),
 
-  buildQuery<Ctx>({path: "/p", method: "get"})
+  buildQuery<Ctx>("get")
+    .path("/p")
     .withAuth({type: "publicAccess"})
     .build(({auth}) => {
       auth
       return Promise.reject()
     }),
-  buildQuery<Ctx>({path: "/p", method: "post"})
+  buildQuery<Ctx>("post")
+    .idPath()
     .withAuth({type: "publicAccess"})
     .withBody({
       validator: z.object({
         item: z.string(),
       }),
     })
-    .build(({auth, req, body}) => {
+    .build(({auth, req, body, id}) => {
       body
       req.body
       auth
-      return Promise.reject()
+      return Promise.reject("id" + id)
     }),
-  buildQuery<Ctx>({path: "/my-todos", method: "get"})
+  buildQuery<Ctx>("get")
+    .idPath()
     .withAuth({type: "authenticated"})
     .withBody({
       validator: z.object({
@@ -51,7 +55,7 @@ const builders = [
         done: z.boolean().default(true),
       }),
     })
-    .build(async ({res, db, auth, req}) => {
+    .build(async ({res, db, auth, req, id}) => {
       req.body
       //   const myTodos = await db.todo.findMany({
       //     condition: {owner: {Equal: auth.userId}},
@@ -59,7 +63,8 @@ const builders = [
       throw new Error("")
     }),
 
-  buildQuery<Ctx>({path: "/", method: "post"})
+  buildQuery<Ctx>("post")
+    .path("/asdf")
     .withAuth({type: "authenticated"})
     .withBody({
       validator: z.object({levels: z.array(z.string())}),
