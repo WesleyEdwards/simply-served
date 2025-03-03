@@ -17,6 +17,28 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
     }
   }
 
+  if ("GreaterThan" in condition) {
+    return {
+      $gt: condition.GreaterThan as any,
+    }
+  }
+  if ("GreaterThanOrEqual" in condition) {
+    return {
+      $gte: condition.GreaterThanOrEqual as any,
+    }
+  }
+
+  if ("LessThan" in condition) {
+    return {
+      $lt: condition.LessThan as any,
+    }
+  }
+  if ("LessThanOrEqual" in condition) {
+    return {
+      $lte: condition.LessThanOrEqual as any,
+    }
+  }
+
   if ("And" in condition) {
     return {$and: condition.And.map((cond) => conditionToFilter(cond)) as any}
   }

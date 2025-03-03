@@ -45,9 +45,18 @@ export const createConditionSchema = <T>(
       return z.object({[key]: z.literal(true)}).parse(body)
     }
 
-    if (key === "Equal") {
-      return z.object({Equal: schema}).parse(body)
+    if (
+      [
+        "Equal",
+        "GreaterThan",
+        "GreaterThanOrEqual",
+        "LessThan",
+        "LessThanOrEqual",
+      ].includes(key)
+    ) {
+      return z.object({[key]: schema}).parse(body)
     }
+
     if (key === "Inside") {
       return z.object({Inside: schema.array()}).parse(body)
     }

@@ -7,10 +7,14 @@ This condition system is inspired by MongoDB's query language. The primary goal 
 ## Formal Definition
 
 ```typescript
-type Condition<T> =
+export type Condition<T> =
   | {Always: true}
   | {Never: true}
   | {Equal: T}
+  | {GreaterThan: T}
+  | {GreaterThanOrEqual: T}
+  | {LessThan: T}
+  | {LessThanOrEqual: T}
   | {Inside: T[]}
   | {Or: Array<Condition<T>>}
   | {And: Array<Condition<T>>}
@@ -69,6 +73,18 @@ The `Condition<T>` object supports the following properties:
   const condition = {Equal: 42}
   evalCondition(42, condition) // true
   evalCondition(43, condition) // false
+  ```
+
+### 3. `GreaterThan`
+
+- **Description**: Evaluates to `true` if the `item` is greater than the specified value.
+- **Note**: `GreaterThanOrEqual`, `LessThan`, and `LessThanOrEqual` work the same way with their respective operators
+- **Example**:
+  ```typescript
+  const condition = {GreaterThan: 42}
+  evalCondition(41, condition) // false
+  evalCondition(42, condition) // false
+  evalCondition(43, condition) // true
   ```
 
 ### 4. `Inside`

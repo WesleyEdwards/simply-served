@@ -42,7 +42,7 @@ export function controller<C extends ServerContext>(
       const p = path.type === "id" ? "/:id" : path.route
 
       router.use(p, async (req, res, next): Promise<any> => {
-        const sameMethod = req.method.toLowerCase() === route.method
+        const sameMethod = req.method.toLowerCase() === method
         if (!sameMethod) {
           return next()
         }
@@ -63,7 +63,7 @@ export function controller<C extends ServerContext>(
         if (path.type === "id") {
           const f: EndpointBuilderType<C, {type: "id"}, Body, any> = fun
           const p = req.params as any
-          return f({id: p.id, req, res, ...c})
+          return f({id: p.id, req, res, body: req.body, ...c})
         }
         const f: EndpointBuilderType<
           C,
@@ -71,7 +71,7 @@ export function controller<C extends ServerContext>(
           Body,
           any
         > = fun
-        return f({req, res, ...c}) // todo
+        return f({req, res, body: req.body, ...c})
       })
       router.use((err: any, _req: Request, res: Response, _next: any) => {
         if (err.status) {
