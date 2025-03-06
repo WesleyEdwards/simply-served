@@ -39,7 +39,7 @@ export function controller<C extends ServerContext>(
     routes.forEach((route) => {
       const {authOptions, method, fun, path} = route
 
-      const p = path.type === "id" ? "/:id" : path.route
+      const p = path.route
 
       router.use(p, async (req, res, next): Promise<any> => {
         const sameMethod = req.method.toLowerCase() === method
@@ -61,7 +61,12 @@ export function controller<C extends ServerContext>(
           return next()
         }
         if (path.type === "id") {
-          const f: EndpointBuilderType<C, {type: "id"}, Body, any> = fun
+          const f: EndpointBuilderType<
+            C,
+            {type: "id"; route: `/${string}:id`},
+            Body,
+            any
+          > = fun
           const p = req.params as any
           return f({id: p.id, req, res, body: req.body, ...c})
         }

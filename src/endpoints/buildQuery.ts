@@ -50,10 +50,15 @@ type Builder<C extends ServerContext> = {
     route: `/${string}`
   ) => NewType1<C, {type: "route"; route: `/${string}`}>
 
-  idPath: () => NewType1<C, {type: "id"}>
+  idPath: (
+    //default: "/:id"
+    route?: `/${string}:id`
+  ) => NewType1<C, {type: "id"; route: `/${string}:id`}>
 }
 
-export type Path = {type: "id"} | {type: "route"; route: `/${string}`}
+export type Path =
+  | {type: "id"; route: `/${string}:id`}
+  | {type: "route"; route: `/${string}`}
 
 function createBuilder<
   C extends ServerContext,
@@ -129,27 +134,27 @@ export function buildQuery<C extends ServerContext>(
         authOptions: {type: "publicAccess"},
       }),
     }),
-    idPath: () => ({
+    idPath: (route) => ({
       withAuth: (authOptions) => ({
         withBody: withBody({
           method,
-          path: {type: "id"},
+          path: {type: "id", route: route ?? "/:id"},
           authOptions: authOptions,
         }),
         build: createBuilder({
           method,
-          path: {type: "id"},
+          path: {type: "id", route: route ?? "/:id"},
           authOptions: authOptions,
         }),
       }),
       withBody: withBody({
         method,
-        path: {type: "id"},
+        path: {type: "id", route: route ?? "/:id"},
         authOptions: {type: "publicAccess"},
       }),
       build: createBuilder({
         method,
-        path: {type: "id"},
+        path: {type: "id", route: route ?? "/:id"},
         authOptions: {type: "publicAccess"},
       }),
     }),

@@ -16,7 +16,7 @@ type Ctx = {
 
 const builders = [
   buildQuery<Ctx>("get")
-    .idPath()
+    .idPath("/sdfth/:id")
     .withAuth({type: "customAuth", check: () => true})
     .build(({auth}) => {
       auth.permissions
@@ -31,7 +31,7 @@ const builders = [
       return Promise.reject()
     }),
   buildQuery<Ctx>("post")
-    .idPath()
+    .idPath("/:id")
     .withAuth({type: "publicAccess"})
     .withBody({
       validator: z.object({
@@ -45,7 +45,7 @@ const builders = [
       return Promise.reject("id" + id)
     }),
   buildQuery<Ctx>("get")
-    .idPath()
+    .idPath("/:id")
     .withAuth({type: "authenticated"})
     .withBody({
       validator: z.object({
