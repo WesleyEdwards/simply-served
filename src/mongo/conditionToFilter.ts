@@ -3,7 +3,7 @@ import {Condition} from "../condition/condition"
 
 export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
   if ("Equal" in condition) {
-    return condition.Equal as Filter<T>
+    return {$eq: condition.Equal} as Filter<T>
   }
   if ("Inside" in condition) {
     return {$in: condition.Inside} as Filter<T>
@@ -15,6 +15,9 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
     return {
       $or: condition.Or.map((cond) => conditionToFilter(cond)) as any,
     }
+  }
+  if ("And" in condition) {
+    return {$and: condition.And.map((cond) => conditionToFilter(cond)) as any}
   }
 
   if ("GreaterThan" in condition) {
@@ -39,10 +42,6 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
     }
   }
 
-  if ("And" in condition) {
-    return {$and: condition.And.map((cond) => conditionToFilter(cond)) as any}
-  }
-
   if ("Always" in condition) {
     if (condition.Always) {
       return {}
@@ -52,7 +51,7 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
   }
 
   if ("ListAnyElement" in condition) {
-    return conditionToFilter(condition.ListAnyElement) as any
+    return {$elemMatch: conditionToFilter(condition.ListAnyElement)}
   }
 
   if ("StringContains" in condition) {
@@ -64,19 +63,64 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
     }
   }
 
-  for (const key in condition) {
-    const value = condition[key]
+  const nested = extractNestedKey(condition)
 
-    if (key === "Equal" || key === "Or" || key === "And" || key === "Always") {
-      continue
-    }
-
-    if (value && typeof value === "object") {
-      return {
-        [key]: conditionToFilter(value),
-      } as any
-    }
+  if ("And" in nested.condition) {
+    return {
+      $and: nested.condition.And.map((cond) => ({
+        [nested.key]: conditionToFilter(cond),
+      })),
+    } as any
+  }
+  if ("Or" in nested.condition) {
+    return {
+      $or: nested.condition.Or.map((cond) => ({
+        [nested.key]: conditionToFilter(cond),
+      })),
+    } as any
   }
 
-  throw new Error("Invalid condition")
+  return {[nested.key]: conditionToFilter(nested.condition)} as any
 }
+
+const extractNestedKey = <T>(
+  c: Condition<T>
+): {key: string; condition: Condition<T>} => {
+  let keyString = ""
+  let condition = c
+
+  while (true) {
+    if (typeof condition === "object" && condition !== null) {
+      const nestedKeyValue = Object.entries(condition).at(0)
+      if (!nestedKeyValue) {
+        return {key: keyString, condition}
+      }
+      const [nestedKey, nestedValue] = nestedKeyValue
+
+      if (contitionStrs.includes(nestedKey)) {
+        return {key: keyString, condition}
+      }
+
+      const strToAdd = keyString === "" ? nestedKey : `.${nestedKey}`
+
+      keyString += strToAdd
+
+      condition = nestedValue
+    }
+  }
+}
+
+const contitionStrs = [
+  "Always",
+  "Never",
+  "Equal",
+  "GreaterThan",
+  "GreaterThanOrEqual",
+  "LessThan",
+  "LessThanOrEqual",
+  "Inside",
+  "Or",
+  "And",
+  "ListAnyElement",
+  "StringContains",
+]

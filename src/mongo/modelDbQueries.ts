@@ -3,6 +3,7 @@ import {HasId, DbMethods} from "../server/DbMethods"
 import {conditionToFilter} from "./conditionToFilter"
 import {Condition, Query} from "../condition"
 import {InternalServerError, NotFoundError} from "../server"
+// const { inspect } = require('node:util');
 
 /**
  * @param db Mongo Db
@@ -39,14 +40,13 @@ export function mongoQueries<T extends HasId>(
     findMany: async (query: Query<T>) => {
       const c = query.condition ? conditionToFilter(query.condition) : {}
       try {
+        // console.log(inspect(c, {depth: null}))
         const items = collection.find(c, {
           limit: query.limit ?? 100,
         })
         return (await items.toArray()) as T[]
       } catch (e: any) {
-        throw new InternalServerError(
-          `Unable to query items`
-        )
+        throw new InternalServerError(e.message)
       }
     },
     insertOne: async (newItem: T) => {
