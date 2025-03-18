@@ -1,7 +1,7 @@
 import {Route} from "../server/controller"
 import {DbMethods, HasId} from "../server/DbMethods"
 import {Condition} from "../condition/condition"
-import {AuthOptions, buildQuery} from "./buildQuery"
+import {buildQuery} from "./buildQuery"
 import {createQuerySchema} from "../condition/conditionSchema"
 import {ZodType} from "zod"
 import {ServerContext} from "../server/simpleServer"
@@ -65,8 +65,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
 ): Route<C, any, any>[] {
   return [
     buildQuery<C>("get")
-      .idPath()
-      .withAuth(getAuthOptions(builderInfo.permissions, "read"))
+      .idPath("/:id")
+      .withCustomAuth(getAuthOptions(builderInfo.permissions.read))
       .build(async ({req, res, id, ...rest}) => {
         const client = rest as unknown as C
         if (!id || typeof id !== "string") {
@@ -77,7 +77,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           const item = await builderInfo.collection(client.db).findOne({
             And: [
               {_id: {Equal: id}},
-              getItemCondition(builderInfo.permissions, client, "read"),
+              getItemCondition(builderInfo.permissions.read, client),
             ],
           })
           return res.json(
@@ -89,7 +89,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       }),
     buildQuery<C>("post")
       .path("/query")
-      .withAuth(getAuthOptions(builderInfo.permissions, "read"))
+      .withCustomAuth(getAuthOptions(builderInfo.permissions.read))
       .withBody({validator: createQuerySchema(builderInfo.validator)})
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
@@ -98,7 +98,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           condition: {
             And: [
               req.body.condition ?? {Always: true},
-              getItemCondition(builderInfo.permissions, client, "read"),
+              getItemCondition(builderInfo.permissions.read, client),
             ],
           },
           limit: req.body.limit,
@@ -115,7 +115,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       }),
     buildQuery<C>("post")
       .path("/insert")
-      .withAuth(getAuthOptions(builderInfo.permissions, "create"))
+      .withCustomAuth(getAuthOptions(builderInfo.permissions.create))
       .withBody({validator: builderInfo.validator})
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
@@ -123,7 +123,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
 
         const canCreate = evalCondition(
           body,
-          getItemCondition(builderInfo.permissions, client, "create")
+          getItemCondition(builderInfo.permissions.create, client)
         )
 
         if (!canCreate) {
@@ -147,8 +147,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         }
       }),
     buildQuery<C>("put")
-      .idPath()
-      .withAuth(getAuthOptions(builderInfo.permissions, "modify"))
+      .idPath("/:id")
+      .withCustomAuth(getAuthOptions(builderInfo.permissions.modify))
       .withBody({validator: partialValidator(builderInfo.validator)})
       .build(async ({req, res, id, ...rest}) => {
         const {body} = req
@@ -157,7 +157,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         const item = await builderInfo.collection(client.db).findOne({
           And: [
             {_id: {Equal: id}},
-            getItemCondition(builderInfo.permissions, client, "modify"),
+            getItemCondition(builderInfo.permissions.modify, client),
           ],
         })
         const intercepted =
@@ -175,8 +175,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         )
       }),
     buildQuery<C>("delete")
-      .idPath()
-      .withAuth(getAuthOptions(builderInfo.permissions, "delete"))
+      .idPath("/:id")
+      .withCustomAuth(getAuthOptions(builderInfo.permissions.delete))
       .build(async ({req, res, ...rest}) => {
         const client = rest as unknown as C
 
@@ -186,7 +186,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         const item = await builderInfo.collection(client.db).findOne({
           And: [
             {_id: {Equal: req.params.id}},
-            getItemCondition(builderInfo.permissions, client, "delete"),
+            getItemCondition(builderInfo.permissions.delete, client),
           ],
         })
         await builderInfo.actions?.interceptDelete?.(item, client)
@@ -203,21 +203,19 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
 
 // Can perform action on item
 const getItemCondition = <C extends ServerContext, T extends HasId>(
-  perms: BuilderParams<C, T>["permissions"],
-  clients: C,
-  type: "read" | "create" | "modify" | "delete"
+  perms: ModelPermOption<C, T>,
+  clients: C
 ): Condition<T> => {
-  const value = perms[type]
-  if (value.type === "notAllowed") {
+  if (perms.type === "notAllowed") {
     return {Never: true}
   }
-  if (value.type === "publicAccess") {
+  if (perms.type === "publicAccess") {
     return {Always: true}
   }
-  if (value.type === "authenticated") {
+  if (perms.type === "authenticated") {
     return {Always: true}
   }
-  return value.check(clients.auth)
+  return perms.check(clients.auth)
 }
 
 /**
@@ -225,15 +223,18 @@ const getItemCondition = <C extends ServerContext, T extends HasId>(
  * If modelAuth is provided, that'll be checked in 'getItemCondition'
  */
 const getAuthOptions = <C extends ServerContext, T extends HasId>(
-  perms: BuilderParams<C, T>["permissions"],
-  type: "read" | "create" | "modify" | "delete"
-): AuthOptions<C> => {
-  const value = perms[type]
-  if (value.type === "notAllowed" || value.type === "publicAccess") {
-    return value
-  }
-  return {
-    type: "customAuth",
-    check: () => true,
+  perms: ModelPermOption<C, T>
+): ((auth: C["auth"]) => boolean) => {
+  return (auth: C["auth"]) => {
+    if (perms.type === "notAllowed") {
+      return false
+    }
+    if (perms.type === "publicAccess") {
+      return true
+    }
+    if (perms.type === "authenticated") {
+      return auth !== null
+    }
+    return true
   }
 }

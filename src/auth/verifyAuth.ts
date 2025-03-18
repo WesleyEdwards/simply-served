@@ -34,7 +34,11 @@ export function verifyAuth<Ctx extends ServerContext>(encryptionKey: string) {
       }
 
       if (authOptions.type === "customAuth") {
-        if (authOptions.check(auth)) {
+        const nameOfId = authOptions.path.route.split(":").at(1)
+        if (!nameOfId) {
+          throw new Error("Id not found")
+        }
+        if (authOptions.check(auth, {[nameOfId]: req.params[nameOfId]})) {
           return {...clients, auth} as Ctx
         }
       }

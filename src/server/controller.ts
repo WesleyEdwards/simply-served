@@ -1,31 +1,34 @@
 import express, {Express, Response, Request} from "express"
 import {Middleware, ServerContext} from "./simpleServer"
-import {AuthOptions, Path} from "../endpoints"
+import {AuthPath, Path} from "../endpoints"
 import {OptionalAuth, When, WithoutAuth} from "../endpoints/types"
 
 export type EndpointBuilderType<
   C extends ServerContext,
   P extends Path,
   Body,
-  A extends AuthOptions<C> | undefined
+  A extends AuthPath<C, P> | undefined
 > = (
   info: {
     req: Request<any, any, Body>
     body: Body
     res: Response
-  } & When<DisableAuth<A>, OptionalAuth<C>, C> &
-    When<P["type"] extends "id" ? true : false, {id: string}, {}>
+  } & When<DisableAuth<C, P, A>, OptionalAuth<C>, C> &
+    IdObjFromPath<P>
 ) => Promise<Response<any, Record<string, any>>>
+
+export type IdObjFromPath<P extends Path> = {
+  [idName in P["route"] extends `${string}:${infer H}` ? H : never]: string
+}
 
 export type Route<
   C extends ServerContext = ServerContext,
   P extends Path = Path,
   Body = any,
-  A extends AuthOptions<C> = any
+  A extends AuthPath<C, P> = any
 > = {
   fun: EndpointBuilderType<C, P, Body, A>
-  authOptions: AuthOptions<C>
-  path: P
+  authPath: AuthPath<C, P>
   method: "post" | "put" | "get" | "delete"
 }
 
@@ -36,9 +39,9 @@ export function controller<C extends ServerContext>(
   return (app: Express, initCxt: WithoutAuth<C>, middleware: Middleware<C>) => {
     const router = express.Router()
     routes.forEach((route) => {
-      const {authOptions, method, fun, path} = route
+      const {authPath: authOptions, method, fun} = route
 
-      const p = path.route
+      const p = authOptions.path.route
 
       router.use(p, async (req, res, next): Promise<any> => {
         const sameMethod = req.method.toLowerCase() === method
@@ -59,23 +62,16 @@ export function controller<C extends ServerContext>(
         if (c === null) {
           return next()
         }
-        if (path.type === "id") {
-          const f: EndpointBuilderType<
-            C,
-            {type: "id"; route: `/${string}:id`},
-            Body,
-            any
-          > = fun
+        if (authOptions.path.type === "id") {
           const p = req.params as any
-          return f({id: p.id, req, res, body: req.body, ...c})
+          const nameOfId = authOptions.path.route.split(":").at(1)
+          if (!nameOfId) {
+            throw new Error("Id not found")
+          }
+          return fun({[nameOfId]: p[nameOfId], req, res, body: req.body, ...c})
+        } else {
+          return fun({req, res, body: req.body, ...c})
         }
-        const f: EndpointBuilderType<
-          C,
-          {type: "route"; route: `/${string}`},
-          Body,
-          any
-        > = fun
-        return f({req, res, body: req.body, ...c})
       })
       router.use((err: any, _req: Request, res: Response, _next: any) => {
         if (err.status) {
@@ -89,8 +85,8 @@ export function controller<C extends ServerContext>(
   }
 }
 
-type DisableAuth<T extends AuthOptions<any> | undefined> = T extends undefined
-  ? true
-  : T extends {type: "publicAccess"}
-  ? true
-  : false
+type DisableAuth<
+  C extends ServerContext,
+  P extends Path,
+  A extends AuthPath<C, P> | undefined
+> = A extends undefined ? true : A extends {type: "publicAccess"} ? true : false

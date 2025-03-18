@@ -48,7 +48,7 @@ export const getMockServer = () => {
           }),
           buildQuery<MockCtx>("post")
             .path("/")
-            .withAuth({type: "authenticated"})
+            .withAuth()
             .withBody({
               validator: z.object({
                 _id: z.string().uuid(),

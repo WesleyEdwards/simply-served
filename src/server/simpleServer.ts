@@ -1,4 +1,4 @@
-import {AuthOptions} from "../endpoints"
+import {AuthPath} from "../endpoints"
 import {Route, controller} from "./controller"
 import express, {Request} from "express"
 import {WithoutAuth} from "../endpoints/types"
@@ -13,7 +13,7 @@ export type ServerContext = {
 export type Middleware<C extends ServerContext> = (
   req: Request,
   initCtx: WithoutAuth<C>,
-  authOptions: AuthOptions<C>
+  authOptions: AuthPath<C, any>
 ) => C
 
 export type Controller<C extends ServerContext> = {
