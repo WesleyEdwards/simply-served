@@ -1,27 +1,26 @@
 import express, {Express, Response, Request} from "express"
 import {AuthPath, Path} from "../endpoints"
-import {
-  Method,
-  OptionalAuth,
-  WithoutAuth,
-  ServerContext,
-  SimpleMiddleware,
-} from "types"
-import {When} from "endpoints/types"
+import {Method, WithoutAuth, ServerContext, SimpleMiddleware} from "types"
 import {UnauthorizedError} from "./errorHandling"
 
 export type EndpointBuilderType<
   C extends ServerContext,
   P extends Path,
   Body,
-  A extends AuthPath<C, P> | undefined
+  A extends AuthPath<C, P>
 > = (
   info: {
     req: Request<any, any, Body>
     body: Body
     res: Response
-  } & When<DisableAuth<C, P, A>, OptionalAuth<C>, C> &
-    IdObjFromPath<P>
+  } & IdObjFromPath<P> & {
+      [K in keyof C]: K extends "auth" ? C["auth"] | undefined : C[K]
+    },
+  auth: A extends undefined
+    ? C["auth"] | undefined
+    : A extends {type: "publicAccess"}
+    ? C["auth"] | undefined
+    : C["auth"]
 ) => Promise<Response<any, Record<string, any>>>
 
 export type IdObjFromPath<P extends Path> = {
@@ -38,12 +37,6 @@ export type Route<
   authPath: AuthPath<C, P>
   method: Method
 }
-
-type DisableAuth<
-  C extends ServerContext,
-  P extends Path,
-  A extends AuthPath<C, P> | undefined
-> = A extends undefined ? true : A extends {type: "publicAccess"} ? true : false
 
 export function controller<C extends ServerContext>(
   basePath: `/${string}`,
@@ -69,17 +62,25 @@ export function controller<C extends ServerContext>(
       })
 
       router[method](p, async (req, res): Promise<any> => {
-        const c = verifyAuth(req, initCxt, authOptions, getAuth)
-
+        const {auth, ...rest} = verifyAuth(req, initCxt, authOptions, getAuth)
         if (authOptions.path.type === "id") {
           const p = req.params as any
           const nameOfId = authOptions.path.route.split(":").at(1)
           if (!nameOfId) {
             throw new Error("Id not found")
           }
-          return fun({[nameOfId]: p[nameOfId], req, res, body: req.body, ...c})
+          return (fun as any)(
+            {
+              [nameOfId]: p[nameOfId],
+              req,
+              res,
+              body: req.body,
+              ...rest,
+            },
+            auth
+          )
         } else {
-          return fun({req, res, body: req.body, ...c})
+          return (fun as any)({req, res, body: req.body, ...rest}, auth)
         }
       })
       router.use((err: any, _req: Request, res: Response, _next: any) => {

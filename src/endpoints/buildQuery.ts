@@ -196,7 +196,7 @@ function withBody<
     build: (builder) => ({
       authPath: params.authOptions,
       method: params.method,
-      fun: (info) => {
+      fun: (info, auth) => {
         try {
           optionsParams.validator.parse(info.req.body)
         } catch (e: any) {
@@ -204,7 +204,7 @@ function withBody<
             throw new ParseError(`Invalid request body: ${e.message}`)
           }
         }
-        return builder(info) // todo
+        return builder(info, auth) // todo
       },
     }),
   })

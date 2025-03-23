@@ -1,7 +1,7 @@
 import {z} from "zod"
-import {buildQuery, Route} from "../../src"
+import {buildQuery, EndpointBuilderType, Route} from "../../src"
 
-type Ctx = {
+type TestContext = {
   auth: {
     userId: string
     permissions: {
@@ -15,24 +15,25 @@ type Ctx = {
 }
 
 const builders = [
-  buildQuery<Ctx>("get")
+  buildQuery<TestContext>("get")
     .idPath("/sdfth/:myId")
     .withCustomAuth((s, d) => {
       return d.myId === "sdf"
     })
-    .build(({auth, myId}) => {
+    .build(({myId}, auth) => {
       myId
       auth.permissions
       return Promise.reject()
     }),
 
-  buildQuery<Ctx>("get")
+  buildQuery<TestContext>("get")
     .path("/p")
-    .build(({auth}) => {
-      auth
+    .withAuth()
+    .build(({auth, db}, auth1) => {
+      db.users()
       return Promise.reject()
     }),
-  buildQuery<Ctx>("post")
+  buildQuery<TestContext>("post")
     .idPath("/:userId")
     .withBody({
       validator: z.object({
@@ -45,7 +46,7 @@ const builders = [
       auth
       return Promise.reject("id" + userId)
     }),
-  buildQuery<Ctx>("get")
+  buildQuery<TestContext>("get")
     .idPath("/:id")
     .withAuth()
     .withBody({
@@ -56,13 +57,13 @@ const builders = [
         done: z.boolean().default(true),
       }),
     })
-    .build(async ({res, db, auth, req, id}) => {
+    .build(async ({res, db, req, id}, auth) => {
       req.body
       auth.permissions
       throw new Error("")
     }),
 
-  buildQuery<Ctx>("post")
+  buildQuery<TestContext>("post")
     .path("/asdf")
     .withAuth()
     .withBody({
