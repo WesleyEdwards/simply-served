@@ -94,7 +94,7 @@ export function controller<C extends ServerContext>(
   }
 }
 
-export function verifyAuth<Ctx extends ServerContext>(
+function verifyAuth<Ctx extends ServerContext>(
   req: Request,
   clients: WithoutAuth<Ctx>,
   authOptions: AuthPath<Ctx, any>,

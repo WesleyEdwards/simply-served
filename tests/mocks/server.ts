@@ -6,7 +6,6 @@ import {
   createControllers,
   createRoutes,
   createSimplyServer,
-  verifyAuth,
 } from "../../src"
 import todoDb from "./database"
 import {TodoDb} from "./types"
