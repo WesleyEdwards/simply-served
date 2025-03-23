@@ -1,29 +1,22 @@
-import {AuthPath} from "../endpoints"
+import {
+  ServerContext,
+  WithoutAuth,
+  Controller,
+  ExpressType,
+  SimpleMiddleware,
+} from "../types"
 import {Route, controller} from "./controller"
-import express, {Request} from "express"
-import {WithoutAuth} from "../endpoints/types"
 
-export type ExpressType = ReturnType<typeof express>
-
-export type ServerContext = {
-  db: any
-  auth: any
-}
-
-export type Middleware<C extends ServerContext> = (
-  req: Request,
-  initCtx: WithoutAuth<C>,
-  authOptions: AuthPath<C, any>
-) => C
-
-export type Controller<C extends ServerContext> = {
-  path: `/${string}`
-  routes: Route<C, any, any>[]
-}
-
+/**
+ * 'initContext': Server context without auth
+ * 'getAuth': Middleware for calculating auth for requests
+ * 'controllers': Controller(s) included in server
+ * 'beforeGenerateEndpoints': Provides access to Express App before generation of endpoints
+ * 'afterGenerateEndpoints': Provides access to Express App after generation of endpoints
+ */
 export type SimplyServerConfig<C extends ServerContext> = {
   initContext: WithoutAuth<C>
-  middleware: Middleware<C>
+  getAuth: SimpleMiddleware<C>
   controllers?: Controller<C>[]
   beforeGenerateEndpoints?: (app: ExpressType, context: WithoutAuth<C>) => void
   afterGenerateEndpoints?: (app: ExpressType, context: WithoutAuth<C>) => void
@@ -34,7 +27,7 @@ export const createSimplyServer = <Cxt extends ServerContext>(
 ) => {
   const {
     initContext,
-    middleware,
+    getAuth,
     controllers = [],
     beforeGenerateEndpoints = () => null,
     afterGenerateEndpoints = () => null,
@@ -49,7 +42,7 @@ export const createSimplyServer = <Cxt extends ServerContext>(
   const generateEndpoints = (app: ExpressType): ExpressType => {
     beforeGenerateEndpoints(app, initContext)
     for (const {path, routes} of controllers) {
-      controller(path, routes)(app, initContext, middleware)
+      controller(path, routes)(app, initContext, getAuth)
     }
 
     afterGenerateEndpoints(app, initContext)
@@ -59,7 +52,7 @@ export const createSimplyServer = <Cxt extends ServerContext>(
 
   return {
     initContext,
-    middleware,
+    getAuth,
     setController,
     controllers,
     generateEndpoints,

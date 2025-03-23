@@ -1,7 +1,7 @@
 import {Parsable} from "../server/validation"
 import {EndpointBuilderType, IdObjFromPath, Route} from "../server/controller"
-import {ServerContext} from "../server/simpleServer"
 import {ParseError} from "../server"
+import {Method, ServerContext} from "types"
 
 export type AuthPath<C extends ServerContext, P extends Path> =
   | {type: "publicAccess"; path: P}
@@ -12,8 +12,6 @@ export type AuthPath<C extends ServerContext, P extends Path> =
       check: (auth: C["auth"], ids: IdObjFromPath<P>) => boolean
       path: P
     }
-
-type Method = "get" | "put" | "post" | "delete"
 
 type BodyBuilder<
   C extends ServerContext,

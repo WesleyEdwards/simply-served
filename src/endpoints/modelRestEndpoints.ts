@@ -4,9 +4,9 @@ import {Condition} from "../condition/condition"
 import {AuthPath, buildQueryRaw, Path} from "./buildQuery"
 import {createQuerySchema} from "../condition/conditionSchema"
 import {ZodType} from "zod"
-import {ServerContext} from "../server/simpleServer"
 import {partialValidator} from "../server"
 import {evalCondition} from "../condition"
+import {ServerContext} from "types"
 
 export type BuilderParams<C extends ServerContext, T extends HasId> = {
   validator: ZodType<T, any, any>

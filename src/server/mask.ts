@@ -1,9 +1,9 @@
-import {ServerContext} from "./simpleServer"
+import {ServerContext} from "types"
 
 /**
- * keys with the value of 'true' will be masked. Any key not included or any 
+ * keys with the value of 'true' will be masked. Any key not included or any
  * value that is false will not mask that key
- * 
+ *
  * Example: {passwordHash: true}
  */
 type KeysToMask<T> = Partial<Record<keyof T, boolean>>

@@ -1,4 +1,5 @@
-import {Middleware, ServerContext, UnauthorizedError} from "../server"
+import {ServerContext, SimpleMiddleware} from "types"
+import {UnauthorizedError} from "../server"
 import jwt from "jsonwebtoken"
 
 const getJwtBody = (token: string, encryptionKey: string) => {
@@ -15,40 +16,20 @@ const getJwtBody = (token: string, encryptionKey: string) => {
 
 /**
  * @param encryptionKey
- * @returns A function that will return the clients with the auth field set to the jwt payload if the jwt is valid
+ * @returns A middleware function that verifies auth based on basic Bearer Auth
  */
-export function verifyAuth<Ctx extends ServerContext>(encryptionKey: string) {
-  const fun: Middleware<Ctx> = (req, clients, authOptions) => {
+export function bearerTokenAuth<Ctx extends ServerContext>(
+  encryptionKey: string
+): SimpleMiddleware<Ctx> {
+  return (req) => {
     const token = req.headers.authorization?.split(" ")?.at(1)
     if (token) {
       const auth = getJwtBody(token, encryptionKey) as Ctx["auth"] | null
       if (!auth) {
         throw new UnauthorizedError()
       }
-
-      if (
-        authOptions.type === "publicAccess" ||
-        authOptions.type === "authenticated"
-      ) {
-        return {...clients, auth} as Ctx
-      }
-
-      if (authOptions.type === "customAuth") {
-        const nameOfId = authOptions.path.route.split(":").at(1)
-        if (!nameOfId) {
-          throw new Error("Id not found")
-        }
-        if (authOptions.check(auth, {[nameOfId]: req.params[nameOfId]})) {
-          return {...clients, auth} as Ctx
-        }
-      }
+      return auth
     }
-
-    if (!!authOptions && authOptions.type === "publicAccess") {
-      return {...clients, auth: undefined} as Ctx
-    } else {
-      throw new UnauthorizedError()
-    }
+    return undefined
   }
-  return fun
 }

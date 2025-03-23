@@ -1,21 +1,16 @@
-import {
-  BuilderParams,
-  buildQuery,
-  Controller,
-  HasId,
-  modelRestEndpoints,
-  Route,
-  ServerContext,
-} from "../"
+import {ServerContext, Controller} from "types"
+import {BuilderParams, buildQuery, HasId, modelRestEndpoints, Route} from "../"
 
 /**
  * Utility function to improve implicit typing for constructing controllers
  */
 export const createControllers = <C extends ServerContext>(
   builder: (builders: {
-    createController: (x: Controller<C>) => Controller<C>
+    createController: typeof createController
   }) => Controller<C>[]
 ): Controller<C>[] => builder({createController: (c) => c})
+
+export const createController = <C extends ServerContext>(x: Controller<C>) => x
 
 /**
  * Utility function to improve implicit typing for constructing routes within a controller

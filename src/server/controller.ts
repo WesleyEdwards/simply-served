@@ -1,7 +1,14 @@
 import express, {Express, Response, Request} from "express"
-import {Middleware, ServerContext} from "./simpleServer"
 import {AuthPath, Path} from "../endpoints"
-import {OptionalAuth, When, WithoutAuth} from "../endpoints/types"
+import {
+  Method,
+  OptionalAuth,
+  WithoutAuth,
+  ServerContext,
+  SimpleMiddleware,
+} from "types"
+import {When} from "endpoints/types"
+import {UnauthorizedError} from "./errorHandling"
 
 export type EndpointBuilderType<
   C extends ServerContext,
@@ -25,42 +32,45 @@ export type Route<
   C extends ServerContext = ServerContext,
   P extends Path = Path,
   Body = any,
-  A extends AuthPath<C, P> = any
+  Auth extends AuthPath<C, P> = any
 > = {
-  fun: EndpointBuilderType<C, P, Body, A>
+  fun: EndpointBuilderType<C, P, Body, Auth>
   authPath: AuthPath<C, P>
-  method: "post" | "put" | "get" | "delete"
+  method: Method
 }
+
+type DisableAuth<
+  C extends ServerContext,
+  P extends Path,
+  A extends AuthPath<C, P> | undefined
+> = A extends undefined ? true : A extends {type: "publicAccess"} ? true : false
 
 export function controller<C extends ServerContext>(
   basePath: `/${string}`,
   routes: Route<C>[]
 ) {
-  return (app: Express, initCxt: WithoutAuth<C>, middleware: Middleware<C>) => {
+  return (
+    app: Express,
+    initCxt: WithoutAuth<C>,
+    getAuth: SimpleMiddleware<C>
+  ) => {
     const router = express.Router()
     routes.forEach((route) => {
       const {authPath: authOptions, method, fun} = route
       const p = authOptions.path.route
 
-      router.use(p, async (req, res, next): Promise<any> => {
+      router.use(p, async (req, _, next): Promise<any> => {
         const sameMethod = req.method.toLowerCase() === method
         if (!sameMethod) {
           return next()
         }
-        const c = middleware(req, initCxt, authOptions)
-        if (c === null) {
-          return res.status(401).json({message: "Unauthorized"})
-        } else {
-          next()
-        }
-        return null
+        verifyAuth(req, initCxt, authOptions, getAuth)
+        next()
       })
 
-      router[method](p, async (req, res, next): Promise<any> => {
-        const c: any = middleware(req, initCxt, authOptions)
-        if (c === null) {
-          return next()
-        }
+      router[method](p, async (req, res): Promise<any> => {
+        const c = verifyAuth(req, initCxt, authOptions, getAuth)
+
         if (authOptions.path.type === "id") {
           const p = req.params as any
           const nameOfId = authOptions.path.route.split(":").at(1)
@@ -84,8 +94,34 @@ export function controller<C extends ServerContext>(
   }
 }
 
-type DisableAuth<
-  C extends ServerContext,
-  P extends Path,
-  A extends AuthPath<C, P> | undefined
-> = A extends undefined ? true : A extends {type: "publicAccess"} ? true : false
+export function verifyAuth<Ctx extends ServerContext>(
+  req: Request,
+  clients: WithoutAuth<Ctx>,
+  authOptions: AuthPath<Ctx, any>,
+  getAuth: (req: Request) => NonNullable<Ctx["auth"]> | undefined
+): Ctx {
+  const auth = getAuth(req)
+  if (auth) {
+    if (
+      authOptions.type === "publicAccess" ||
+      authOptions.type === "authenticated"
+    ) {
+      return {...clients, auth} as Ctx
+    }
+
+    if (authOptions.type === "customAuth") {
+      const nameOfId = authOptions.path.route.split(":").at(1)
+      if (!nameOfId) {
+        throw new Error("Id not found")
+      }
+      if (authOptions.check(auth, {[nameOfId]: req.params[nameOfId]})) {
+        return {...clients, auth} as Ctx
+      }
+    }
+  }
+
+  if (authOptions.type === "publicAccess") {
+    return {...clients, auth: undefined} as Ctx
+  }
+  throw new UnauthorizedError()
+}

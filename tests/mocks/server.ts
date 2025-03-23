@@ -1,6 +1,7 @@
 import {z} from "zod"
 import express from "express"
 import {
+  bearerTokenAuth,
   buildQuery,
   createControllers,
   createRoutes,
@@ -23,7 +24,7 @@ export const getMockServer = () => {
 
   const server = createSimplyServer<MockCtx>({
     initContext: {db: todoDb},
-    middleware: verifyAuth("supersecretencryptionkey"),
+    getAuth: bearerTokenAuth("supersecretencryptionkey"),
     controllers: createControllers(({createController}) => [
       createController({
         path: "/todo",
