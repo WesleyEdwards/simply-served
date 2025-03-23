@@ -1,4 +1,4 @@
-import {ServerContext} from "types"
+import {ServerContext} from "../types"
 
 /**
  * keys with the value of 'true' will be masked. Any key not included or any

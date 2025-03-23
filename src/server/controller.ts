@@ -1,6 +1,6 @@
 import express, {Express, Response, Request} from "express"
 import {AuthPath, Path} from "../endpoints"
-import {Method, WithoutAuth, ServerContext, SimpleMiddleware} from "types"
+import {Method, WithoutAuth, ServerContext, SimpleMiddleware} from "../types"
 import {UnauthorizedError} from "./errorHandling"
 
 export type EndpointBuilderType<
@@ -13,14 +13,9 @@ export type EndpointBuilderType<
     req: Request<any, any, Body>
     body: Body
     res: Response
-  } & IdObjFromPath<P> & {
-      [K in keyof C]: K extends "auth" ? C["auth"] | undefined : C[K]
-    },
-  auth: A extends undefined
-    ? C["auth"] | undefined
-    : A extends {type: "publicAccess"}
-    ? C["auth"] | undefined
-    : C["auth"]
+  } & IdObjFromPath<P> &
+    Omit<C, "auth">,
+  auth: A extends {type: "publicAccess"} ? C["auth"] | undefined : C["auth"]
 ) => Promise<Response<any, Record<string, any>>>
 
 export type IdObjFromPath<P extends Path> = {

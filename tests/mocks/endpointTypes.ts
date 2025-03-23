@@ -1,5 +1,5 @@
 import {z} from "zod"
-import {buildQuery, EndpointBuilderType, Route} from "../../src"
+import {buildRoute, EndpointBuilderType, Route} from "../../src"
 
 type TestContext = {
   auth: {
@@ -15,7 +15,7 @@ type TestContext = {
 }
 
 const builders = [
-  buildQuery<TestContext>("get")
+  buildRoute<TestContext>("get")
     .idPath("/sdfth/:myId")
     .withCustomAuth((s, d) => {
       return d.myId === "sdf"
@@ -26,27 +26,28 @@ const builders = [
       return Promise.reject()
     }),
 
-  buildQuery<TestContext>("get")
+  buildRoute<TestContext>("get")
     .path("/p")
     .withAuth()
-    .build(({auth, db}, auth1) => {
+    .build(({db}, auth) => {
+      auth.userId
       db.users()
       return Promise.reject()
     }),
-  buildQuery<TestContext>("post")
+  buildRoute<TestContext>("post")
     .idPath("/:userId")
     .withBody({
       validator: z.object({
         item: z.string(),
       }),
     })
-    .build(({auth, req, body, userId}) => {
+    .build(({req, body, userId}, auth) => {
       body
       req.body
       auth
       return Promise.reject("id" + userId)
     }),
-  buildQuery<TestContext>("get")
+  buildRoute<TestContext>("get")
     .idPath("/:id")
     .withAuth()
     .withBody({
@@ -63,13 +64,13 @@ const builders = [
       throw new Error("")
     }),
 
-  buildQuery<TestContext>("post")
+  buildRoute<TestContext>("post")
     .path("/asdf")
     .withAuth()
     .withBody({
       validator: z.object({levels: z.array(z.string())}),
     })
-    .build(async ({req, res, db, auth}) => {
+    .build(async ({req, res, db}, auth) => {
       auth
       return res.json({})
     }),

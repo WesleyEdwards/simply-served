@@ -1,12 +1,12 @@
 import {Route} from "../server/controller"
 import {DbMethods, HasId} from "../server/DbMethods"
 import {Condition} from "../condition/condition"
-import {AuthPath, buildQueryRaw, Path} from "./buildQuery"
+import {AuthPath, buildRouteRaw, Path} from "./buildRoute"
 import {createQuerySchema} from "../condition/conditionSchema"
 import {ZodType} from "zod"
 import {partialValidator} from "../server"
 import {evalCondition} from "../condition"
-import {ServerContext} from "types"
+import {ServerContext} from "../types"
 
 export type BuilderParams<C extends ServerContext, T extends HasId> = {
   validator: ZodType<T, any, any>
@@ -64,7 +64,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
 ): Route<C, any, any>[] {
   return [
-    buildQueryRaw({
+    buildRouteRaw({
       route: {
         authPath: getAuthOptions(builderInfo.permissions.read, {
           type: "id",
@@ -97,7 +97,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         },
       },
     }),
-    buildQueryRaw({
+    buildRouteRaw({
       route: {
         authPath: getAuthOptions(builderInfo.permissions.read, {
           type: "route",
@@ -129,7 +129,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       },
       validator: createQuerySchema(builderInfo.validator),
     }),
-    buildQueryRaw({
+    buildRouteRaw({
       route: {
         authPath: getAuthOptions(builderInfo.permissions.create, {
           type: "route",
@@ -167,7 +167,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         },
       },
     }),
-    buildQueryRaw({
+    buildRouteRaw({
       route: {
         method: "put",
         authPath: getAuthOptions(builderInfo.permissions.modify, {
@@ -209,7 +209,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       },
       validator: partialValidator(builderInfo.validator),
     }),
-    buildQueryRaw({
+    buildRouteRaw({
       route: {
         method: "delete",
         authPath: getAuthOptions(builderInfo.permissions.delete, {
@@ -260,7 +260,7 @@ const getItemCondition = <C extends ServerContext, T extends HasId>(
 }
 
 /**
- * Determines whether the buildQuery.fun is authorized and accessible.
+ * Determines whether the buildRoute.fun is authorized and accessible.
  * If modelAuth is provided, that'll be checked in 'getItemCondition'
  */
 const getAuthOptions = <C extends ServerContext, P extends Path, T>(

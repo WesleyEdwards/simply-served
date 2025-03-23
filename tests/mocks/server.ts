@@ -2,7 +2,7 @@ import {z} from "zod"
 import express from "express"
 import {
   bearerTokenAuth,
-  buildQuery,
+  buildRoute,
   createControllers,
   createRoutes,
   createSimplyServer,
@@ -46,7 +46,7 @@ export const getMockServer = () => {
               },
             },
           }),
-          buildQuery<MockCtx>("post")
+          buildRoute<MockCtx>("post")
             .path("/")
             .withAuth()
             .withBody({

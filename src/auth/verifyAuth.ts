@@ -1,4 +1,4 @@
-import {ServerContext, SimpleMiddleware} from "types"
+import {ServerContext, SimpleMiddleware} from "../types"
 import {UnauthorizedError} from "../server"
 import jwt from "jsonwebtoken"
 

@@ -3,7 +3,7 @@ import cors from "cors"
 import {
   createSimplyServer,
   createController,
-  buildQuery,
+  buildRoute,
   modelRestEndpoints,
   bearerTokenAuth,
 } from "simply-served"
@@ -68,10 +68,10 @@ const server = createSimplyServer<ServerCtx>({
           },
         }),
         // Custom route for getting the todos of the authenticated user
-        buildQuery<ServerCtx>("get")
+        buildRoute<ServerCtx>("get")
           .path("/my-todos")
           .withAuth()
-          .build(async ({res, db, auth}) => {
+          .build(async ({res, db}, auth) => {
             const myTodos = await db.todo.findMany({
               condition: {owner: {Equal: auth.userId}},
             })

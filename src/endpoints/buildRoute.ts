@@ -1,7 +1,7 @@
 import {Parsable} from "../server/validation"
 import {EndpointBuilderType, IdObjFromPath, Route} from "../server/controller"
 import {ParseError} from "../server"
-import {Method, ServerContext} from "types"
+import {Method, ServerContext} from "../types"
 
 export type AuthPath<C extends ServerContext, P extends Path> =
   | {type: "publicAccess"; path: P}
@@ -70,7 +70,17 @@ export type Path =
   | {type: "id"; route: `/${string}:${string}`}
   | {type: "route"; route: `/${string}`}
 
-export function buildQuery<C extends ServerContext>(
+/**
+ * Builds a type-safe route using the builder pattern.
+ *
+ * The following are defined:
+ * - Method: The HTTP method for the route ("get", "post", "put", "delete").
+ * - path: Either a route or an id path.
+ * - Auth: The authentication type for the route, which can be "publicAccess", "authenticated", or "customAuth".
+ * - Body: The body type for the route (if any), which is parsed using a validator.
+ * - Build: Define logic/operations that the route performs, assuming the request has met the auth requirements.
+ */
+export function buildRoute<C extends ServerContext>(
   method: Method
 ): Builder<C> {
   return {
@@ -210,7 +220,7 @@ function withBody<
   })
 }
 
-export function buildQueryRaw<
+export function buildRouteRaw<
   C extends ServerContext,
   P extends Path,
   Auth extends AuthPath<C, P>

@@ -19,6 +19,4 @@ export type Controller<Ctx extends ServerContext> = {
   routes: Route<Ctx, any, any>[]
 }
 
-export type WithoutAuth<Ctx extends ServerContext> = {
-  [K in keyof Ctx as K extends "auth" ? never : K]: Ctx[K]
-}
+export type WithoutAuth<Ctx extends ServerContext> = Omit<Ctx, "auth">
