@@ -1,7 +1,7 @@
 import {Route} from "../server/controller"
 import {DbMethods, HasId} from "../server/DbMethods"
 import {Condition} from "../condition/condition"
-import {buildQuery} from "./buildQuery"
+import {AuthPath, buildQueryRaw, Path} from "./buildQuery"
 import {createQuerySchema} from "../condition/conditionSchema"
 import {ZodType} from "zod"
 import {ServerContext} from "../server/simpleServer"
@@ -26,14 +26,14 @@ export type ModelPermissions<C extends ServerContext, T> = {
  * Permissions
  * 'publicAccess' - No authentication is required
  * 'authenticated' - Permission granted to any authenticated user
- * 'notAllowed' - Permission is Not granted to anyone
  * 'modelAuth' - Permission granted based on the Condition provided through 'check'
+ * 'notAllowed' - Permission is Not granted to anyone
  */
 export type ModelPermOption<C extends ServerContext, T> =
   | {type: "publicAccess"}
-  | {type: "notAllowed"}
   | {type: "authenticated"}
   | {type: "modelAuth"; check: (auth: C["auth"]) => Condition<T>}
+  | {type: "notAllowed"}
 
 export type ModelActions<S, T> = {
   prepareResponse?: (items: T, clients: S) => T
@@ -64,140 +64,181 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
 ): Route<C, any, any>[] {
   return [
-    buildQuery<C>("get")
-      .idPath("/:id")
-      .withCustomAuth(getAuthOptions(builderInfo.permissions.read))
-      .build(async ({req, res, id, ...rest}) => {
-        const client = rest as unknown as C
-        if (!id || typeof id !== "string") {
-          return res.status(400).json("Id required")
-        }
+    buildQueryRaw({
+      route: {
+        authPath: getAuthOptions(builderInfo.permissions.read, {
+          type: "id",
+          route: `/:id`,
+        }),
+        method: "get",
+        fun: async ({req, res, ...rest}) => {
+          if (!req.params.id) {
+            return res.status(400).json({error: "Provide a valid id"})
+          }
+          const id: string = req.params.id
+          const client = rest as unknown as C
+          if (!id || typeof id !== "string") {
+            return res.status(400).json("Id required")
+          }
 
-        try {
+          try {
+            const item = await builderInfo.collection(client.db).findOne({
+              And: [
+                {_id: {Equal: id}},
+                getItemCondition(builderInfo.permissions.read, client),
+              ],
+            })
+            return res.json(
+              builderInfo.actions?.prepareResponse?.(item, client) ?? item
+            )
+          } catch {
+            return res.status(404).json({message: "Not Found"})
+          }
+        },
+      },
+    }),
+    buildQueryRaw({
+      route: {
+        authPath: getAuthOptions(builderInfo.permissions.read, {
+          type: "route",
+          route: `/query`,
+        }),
+        method: "post",
+        fun: async ({req, res, ...rest}) => {
+          const client = rest as unknown as C
+
+          const items = await builderInfo.collection(client.db).findMany({
+            condition: {
+              And: [
+                req.body.condition ?? {Always: true},
+                getItemCondition(builderInfo.permissions.read, client),
+              ],
+            },
+            limit: req.body.limit,
+          })
+
+          if (builderInfo.actions?.prepareResponse) {
+            return res.json(
+              items.map((item) =>
+                builderInfo.actions!.prepareResponse!(item, client)
+              )
+            )
+          }
+          return res.json(items)
+        },
+      },
+      validator: createQuerySchema(builderInfo.validator),
+    }),
+    buildQueryRaw({
+      route: {
+        authPath: getAuthOptions(builderInfo.permissions.create, {
+          type: "route",
+          route: "/insert",
+        }),
+        method: "post",
+        fun: async ({req, res, ...rest}) => {
+          const client = rest as unknown as C
+          const {body} = req
+
+          const canCreate = evalCondition(
+            body,
+            getItemCondition(builderInfo.permissions.create, client)
+          )
+
+          if (!canCreate) {
+            return res.status(401).json({error: "Cannot create"})
+          }
+
+          const processed = builderInfo.actions?.interceptCreate
+            ? await builderInfo.actions.interceptCreate(body, client)
+            : body
+
+          try {
+            const created = await builderInfo
+              .collection(client.db)
+              .insertOne(processed)
+            await builderInfo.actions?.postCreate?.(created, client)
+            return res.json(
+              builderInfo.actions?.prepareResponse?.(created, client) ?? created
+            )
+          } catch {
+            return res.status(500).json({error: "Unable to create item"})
+          }
+        },
+      },
+    }),
+    buildQueryRaw({
+      route: {
+        method: "put",
+        authPath: getAuthOptions(builderInfo.permissions.modify, {
+          type: "route",
+          route: "/:id",
+        }),
+        fun: async ({req, res, ...rest}) => {
+          const {body} = req
+          const client = rest as unknown as C
+
+          if (!req.params.id) {
+            return res.status(400).json({error: "Provide a valid id"})
+          }
+          const id: string = req.params.id
+
           const item = await builderInfo.collection(client.db).findOne({
             And: [
               {_id: {Equal: id}},
-              getItemCondition(builderInfo.permissions.read, client),
+              getItemCondition(builderInfo.permissions.modify, client),
             ],
           })
-          return res.json(
-            builderInfo.actions?.prepareResponse?.(item, client) ?? item
-          )
-        } catch {
-          return res.status(404).json({message: "Not Found"})
-        }
-      }),
-    buildQuery<C>("post")
-      .path("/query")
-      .withCustomAuth(getAuthOptions(builderInfo.permissions.read))
-      .withBody({validator: createQuerySchema(builderInfo.validator)})
-      .build(async ({req, res, ...rest}) => {
-        const client = rest as unknown as C
+          const intercepted =
+            (await builderInfo.actions?.interceptModify?.(
+              item,
+              body,
+              client
+            )) ?? body
 
-        const items = await builderInfo.collection(client.db).findMany({
-          condition: {
-            And: [
-              req.body.condition ?? {Always: true},
-              getItemCondition(builderInfo.permissions.read, client),
-            ],
-          },
-          limit: req.body.limit,
-        })
-
-        if (builderInfo.actions?.prepareResponse) {
-          return res.json(
-            items.map((item) =>
-              builderInfo.actions!.prepareResponse!(item, client)
-            )
-          )
-        }
-        return res.json(items)
-      }),
-    buildQuery<C>("post")
-      .path("/insert")
-      .withCustomAuth(getAuthOptions(builderInfo.permissions.create))
-      .withBody({validator: builderInfo.validator})
-      .build(async ({req, res, ...rest}) => {
-        const client = rest as unknown as C
-        const {body} = req
-
-        const canCreate = evalCondition(
-          body,
-          getItemCondition(builderInfo.permissions.create, client)
-        )
-
-        if (!canCreate) {
-          return res.status(401).json({error: "Cannot create"})
-        }
-
-        const processed = builderInfo.actions?.interceptCreate
-          ? await builderInfo.actions.interceptCreate(body, client)
-          : body
-
-        try {
-          const created = await builderInfo
+          const updated = await builderInfo
             .collection(client.db)
-            .insertOne(processed)
-          await builderInfo.actions?.postCreate?.(created, client)
+            .updateOne(id, intercepted)
+
+          await builderInfo.actions?.postModify?.(updated, client)
+
           return res.json(
-            builderInfo.actions?.prepareResponse?.(created, client) ?? created
+            builderInfo.actions?.prepareResponse?.(updated, client) ?? updated
           )
-        } catch {
-          return res.status(500).json({error: "Unable to create item"})
-        }
-      }),
-    buildQuery<C>("put")
-      .idPath("/:id")
-      .withCustomAuth(getAuthOptions(builderInfo.permissions.modify))
-      .withBody({validator: partialValidator(builderInfo.validator)})
-      .build(async ({req, res, id, ...rest}) => {
-        const {body} = req
-        const client = rest as unknown as C
+        },
+      },
+      validator: partialValidator(builderInfo.validator),
+    }),
+    buildQueryRaw({
+      route: {
+        method: "delete",
+        authPath: getAuthOptions(builderInfo.permissions.delete, {
+          route: "/:id",
+          type: "id",
+        }),
+        fun: async ({req, res, ...rest}) => {
+          const client = rest as unknown as C
 
-        const item = await builderInfo.collection(client.db).findOne({
-          And: [
-            {_id: {Equal: id}},
-            getItemCondition(builderInfo.permissions.modify, client),
-          ],
-        })
-        const intercepted =
-          (await builderInfo.actions?.interceptModify?.(item, body, client)) ??
-          body
+          if (!req.params.id) {
+            return res.status(400).json({error: "Provide a valid id"})
+          }
+          const item = await builderInfo.collection(client.db).findOne({
+            And: [
+              {_id: {Equal: req.params.id}},
+              getItemCondition(builderInfo.permissions.delete, client),
+            ],
+          })
+          await builderInfo.actions?.interceptDelete?.(item, client)
 
-        const updated = await builderInfo
-          .collection(client.db)
-          .updateOne(id, intercepted)
+          const deleted = await builderInfo
+            .collection(client.db)
+            .deleteOne(req.params.id)
 
-        await builderInfo.actions?.postModify?.(updated, client)
-
-        return res.json(
-          builderInfo.actions?.prepareResponse?.(updated, client) ?? updated
-        )
-      }),
-    buildQuery<C>("delete")
-      .idPath("/:id")
-      .withCustomAuth(getAuthOptions(builderInfo.permissions.delete))
-      .build(async ({req, res, ...rest}) => {
-        const client = rest as unknown as C
-
-        if (!req.params.id) {
-          return res.status(400).json({error: "Provide a valid id"})
-        }
-        const item = await builderInfo.collection(client.db).findOne({
-          And: [
-            {_id: {Equal: req.params.id}},
-            getItemCondition(builderInfo.permissions.delete, client),
-          ],
-        })
-        await builderInfo.actions?.interceptDelete?.(item, client)
-
-        const deleted = await builderInfo
-          .collection(client.db)
-          .deleteOne(req.params.id)
-
-        await builderInfo.actions?.postDelete?.(deleted, client)
-        return res.json(deleted._id)
-      }),
+          await builderInfo.actions?.postDelete?.(deleted, client)
+          return res.json(deleted._id)
+        },
+      },
+    }),
   ]
 }
 
@@ -222,19 +263,18 @@ const getItemCondition = <C extends ServerContext, T extends HasId>(
  * Determines whether the buildQuery.fun is authorized and accessible.
  * If modelAuth is provided, that'll be checked in 'getItemCondition'
  */
-const getAuthOptions = <C extends ServerContext, T extends HasId>(
-  perms: ModelPermOption<C, T>
-): ((auth: C["auth"]) => boolean) => {
-  return (auth: C["auth"]) => {
-    if (perms.type === "notAllowed") {
-      return false
-    }
-    if (perms.type === "publicAccess") {
-      return true
-    }
-    if (perms.type === "authenticated") {
-      return auth !== null
-    }
-    return true
+const getAuthOptions = <C extends ServerContext, P extends Path, T>(
+  perms: ModelPermOption<C, T>,
+  path: P
+): AuthPath<C, P> => {
+  if (perms.type === "authenticated") {
+    return {type: "authenticated", path}
   }
+  if (perms.type === "notAllowed") {
+    return {type: "notAllowed", path}
+  }
+  if (perms.type === "publicAccess") {
+    return {type: "publicAccess", path}
+  }
+  return {type: "authenticated", path}
 }

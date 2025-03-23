@@ -5,8 +5,8 @@ import {ParseError} from "../server"
 
 export type AuthPath<C extends ServerContext, P extends Path> =
   | {type: "publicAccess"; path: P}
-  | {type: "notAllowed"; path: P}
   | {type: "authenticated"; path: P}
+  | {type: "notAllowed"; path: P}
   | {
       type: "customAuth"
       check: (auth: C["auth"], ids: IdObjFromPath<P>) => boolean
@@ -210,4 +210,23 @@ function withBody<
       },
     }),
   })
+}
+
+export function buildQueryRaw<
+  C extends ServerContext,
+  P extends Path,
+  Auth extends AuthPath<C, P>
+>(params: {
+  route: Route<C, P, any, Auth>
+  validator?: Parsable<any>
+}): Route<C, P, any, Auth> {
+  const {route, validator} = params
+  const {authPath, method, fun} = route
+  if (validator) {
+    return withBody({
+      method,
+      authOptions: authPath,
+    })({validator}).build(fun)
+  }
+  return route
 }

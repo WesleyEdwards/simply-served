@@ -40,7 +40,6 @@ export function controller<C extends ServerContext>(
     const router = express.Router()
     routes.forEach((route) => {
       const {authPath: authOptions, method, fun} = route
-
       const p = authOptions.path.route
 
       router.use(p, async (req, res, next): Promise<any> => {
