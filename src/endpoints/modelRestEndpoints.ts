@@ -71,12 +71,12 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: `/:id`,
         }),
         method: "get",
-        fun: async ({req, res, ...rest}) => {
+        fun: async ({req, res, ...rest}, auth) => {
           if (!req.params.id) {
             return res.status(400).json({error: "Provide a valid id"})
           }
           const id: string = req.params.id
-          const client = rest as unknown as C
+          const client = {...rest, auth} as unknown as C
           if (!id || typeof id !== "string") {
             return res.status(400).json("Id required")
           }
@@ -104,9 +104,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: `/query`,
         }),
         method: "post",
-        fun: async ({req, res, ...rest}) => {
-          const client = rest as unknown as C
-
+        fun: async ({req, res, ...rest}, auth) => {
+          const client = {...rest, auth} as unknown as C
           const items = await builderInfo.collection(client.db).findMany({
             condition: {
               And: [
@@ -136,8 +135,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: "/insert",
         }),
         method: "post",
-        fun: async ({req, res, ...rest}) => {
-          const client = rest as unknown as C
+        fun: async ({req, res, ...rest}, auth) => {
+          const client = {...rest, auth} as unknown as C
           const {body} = req
 
           const canCreate = evalCondition(
@@ -174,9 +173,9 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           type: "route",
           route: "/:id",
         }),
-        fun: async ({req, res, ...rest}) => {
+        fun: async ({req, res, ...rest}, auth) => {
           const {body} = req
-          const client = rest as unknown as C
+          const client = {...rest, auth} as unknown as C
 
           if (!req.params.id) {
             return res.status(400).json({error: "Provide a valid id"})
@@ -216,8 +215,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: "/:id",
           type: "id",
         }),
-        fun: async ({req, res, ...rest}) => {
-          const client = rest as unknown as C
+        fun: async ({req, res, ...rest}, auth) => {
+          const client = {...rest, auth} as unknown as C
 
           if (!req.params.id) {
             return res.status(400).json({error: "Provide a valid id"})
