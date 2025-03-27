@@ -1,5 +1,5 @@
 import {z} from "zod"
-import {buildRoute, EndpointBuilderType, Route} from "../../src"
+import {buildRoute, buildRouteRaw, EndpointBuilderType, Route} from "../../src"
 
 type TestContext = {
   auth: {
@@ -29,7 +29,7 @@ const builders = [
   buildRoute<TestContext>("get")
     .path("/p")
     .withAuth()
-    .build(({db}, auth) => {
+    .build(async ({db}, auth) => {
       auth.userId
       db.users()
       return Promise.reject()
@@ -43,7 +43,7 @@ const builders = [
     })
     .build(({req, body, userId}, auth) => {
       body
-      req.body
+      req.body.item
       auth
       return Promise.reject("id" + userId)
     }),
@@ -74,4 +74,16 @@ const builders = [
       auth
       return res.json({})
     }),
+  buildRouteRaw({
+    route: {
+      authPath: {
+        type: "authenticated",
+        path: {type: "route", route: "/sample"},
+      },
+      method: "get",
+      fun: () => {
+        throw new Error("")
+      },
+    },
+  }),
 ]
