@@ -93,7 +93,7 @@ export function controller<C extends ServerContext>(
 function verifyAuth<Ctx extends ServerContext>(
   req: Request,
   clients: WithoutAuth<Ctx>,
-  authOptions: AuthPath<Ctx, any>,
+  authOptions: AuthPath<Ctx, Path>,
   getAuth: (req: Request) => NonNullable<Ctx["auth"]> | undefined
 ): Ctx {
   const auth = getAuth(req)
@@ -106,11 +106,16 @@ function verifyAuth<Ctx extends ServerContext>(
     }
 
     if (authOptions.type === "customAuth") {
-      const nameOfId = authOptions.path.route.split(":").at(1)
-      if (!nameOfId) {
-        throw new Error("Id not found")
+      const ids: Record<string, string> = {}
+      if (authOptions.path.type === "id") {
+        const nameOfId = authOptions.path.route.split(":").at(1)
+        if (!nameOfId) {
+          throw new Error("Id not found")
+        }
+        ids[nameOfId] = req.params[nameOfId]
       }
-      if (authOptions.check(auth, {[nameOfId]: req.params[nameOfId]})) {
+
+      if (authOptions.check(auth, ids)) {
         return {...clients, auth} as Ctx
       }
     }
