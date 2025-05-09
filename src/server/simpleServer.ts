@@ -1,19 +1,25 @@
+import {
+  ServerContext,
+  WithoutAuth,
+  Controller,
+  ExpressType,
+  SimpleMiddleware,
+} from "../types"
 import {Route, controller} from "./controller"
-import express, {Request} from "express"
 
-export type ExpressType = ReturnType<typeof express>
-
-export type ServerContext = {
-  db: any
-  auth?: any
-}
-
+/**
+ * 'initContext': Server context without auth
+ * 'getAuth': Middleware for calculating auth for requests
+ * 'controllers': Controller(s) included in server
+ * 'beforeGenerateEndpoints': Provides access to Express App before generation of endpoints
+ * 'afterGenerateEndpoints': Provides access to Express App after generation of endpoints
+ */
 export type SimplyServerConfig<C extends ServerContext> = {
-  initContext: C
-  middleware?: (req: Request, initCtx: C, skipAuth?: boolean) => C | null
-  controllers?: Record<string, Route<C>[]>
-  beforeGenerateEndpoints?: (app: ExpressType, context: C) => void
-  afterGenerateEndpoints?: (app: ExpressType, context: C) => void
+  initContext: WithoutAuth<C>
+  getAuth: SimpleMiddleware<C>
+  controllers?: Controller<C>[]
+  beforeGenerateEndpoints?: (app: ExpressType, context: WithoutAuth<C>) => void
+  afterGenerateEndpoints?: (app: ExpressType, context: WithoutAuth<C>) => void
 }
 
 export const createSimplyServer = <Cxt extends ServerContext>(
@@ -21,22 +27,22 @@ export const createSimplyServer = <Cxt extends ServerContext>(
 ) => {
   const {
     initContext,
-    middleware = () => null,
-    controllers = {},
+    getAuth,
+    controllers = [],
     beforeGenerateEndpoints = () => null,
-    afterGenerateEndpoints = () => null
+    afterGenerateEndpoints = () => null,
   } = config
 
-  let registeredControllers = {...controllers}
+  let registeredControllers = [...controllers]
 
-  const setController = (path: string, routes: Route<Cxt>[]): void => {
-    registeredControllers[path] = routes
+  const setController = (path: `/${string}`, routes: Route<Cxt>[]): void => {
+    registeredControllers.push({path, routes})
   }
 
   const generateEndpoints = (app: ExpressType): ExpressType => {
     beforeGenerateEndpoints(app, initContext)
-    for (const [path, routes] of Object.entries(controllers)) {
-      controller(path, routes)(app, initContext, middleware)
+    for (const {path, routes} of controllers) {
+      controller(path, routes)(app, initContext, getAuth)
     }
 
     afterGenerateEndpoints(app, initContext)
@@ -46,9 +52,9 @@ export const createSimplyServer = <Cxt extends ServerContext>(
 
   return {
     initContext,
-    middleware,
+    getAuth,
     setController,
     controllers,
-    generateEndpoints
+    generateEndpoints,
   }
 }

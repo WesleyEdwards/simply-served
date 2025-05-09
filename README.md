@@ -14,6 +14,7 @@ A lightweight framework accelerate your Node.js server development.
 **Simply Served** is a lightweight Node.js server framework designed to simplify server development while maintaining flexibility and extensibility.
 
 The framework focuses on enabling developers to:
+
 - Access and manipulate data effortlessly.
 - Enforce permissions and maintain data integrity.
 - Auto-generate REST endpoints with basic CRUD operations based on models and permissions.
@@ -38,7 +39,7 @@ Get started with an example server:
 
 ```typescript
 // Basic usage of Simply Served
-import { SimplyServer } from "simply-served";
+import {SimplyServer} from "simply-served"
 import {z} from "zod"
 import express from "express"
 
@@ -53,17 +54,20 @@ const server = createSimplyServer({
       // Schema validation
       validator: z.object({
         _id: z.string().uuid(),
-        name: z.string()
+        name: z.string(),
       }),
       // permissions defining who can do what
       permissions: {
-        create: () => ({Always: true}),
-        read: () => ({Always: true}),
-        modify: ({myUserId}) => ({_id: {Equal: myUserId}}),
-        delete: () => ({Never: true})
-      }
-    })
-  }
+        create: {type: "publicAccess"},
+        read: {type: "publicAccess"},
+        modify: {
+          type: "modelAuth",
+          check: ({myUserId}) => ({_id: {Equal: myUserId}}),
+        },
+        delete: {type: "notAllowed"},
+      },
+    }),
+  },
 })
 
 server.generateEndpoints(express())

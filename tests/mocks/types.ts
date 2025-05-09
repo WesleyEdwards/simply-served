@@ -1,4 +1,4 @@
-import {DbMethods} from "simply-served"
+import {DbMethods} from "../../src"
 
 export type Todo = {
   _id: string

@@ -13,5 +13,5 @@
     "baseUrl": "src"
   },
   "compileOnSave": true,
-  "include": ["src", "condition/tests"]
+  "include": ["src"]
 }

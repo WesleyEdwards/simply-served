@@ -5,16 +5,14 @@ import {Condition} from "../src/condition/condition"
 
 describe("assures the correct schema is created from `createConditionSchema`", () => {
   const stringSchema = createConditionSchema(z.string())
-  const stringSchemaParse = (b: any) => stringSchema.safeParse(b)
+  const stringSchemaParse = (b: any) => stringSchema.parse(b)
 
   const successAndMatchObj = (b: any) =>
-    expect(stringSchemaParse(b)).toMatchObject({
-      success: true,
-      data: b
-    })
+    expect(stringSchemaParse(b)).toMatchObject(b)
 
-  const unSuccessful = (b: any) =>
-    expect(stringSchemaParse(b).success).toBe(false)
+  const unSuccessful = (b: any) => {
+    return expect(() => stringSchemaParse(b)).toThrow(Error)
+  }
 
   test("Invalid input", () => {
     unSuccessful("")
@@ -27,7 +25,6 @@ describe("assures the correct schema is created from `createConditionSchema`", (
   test("Always & Never", () => {
     successAndMatchObj({Always: true})
     successAndMatchObj({never: true})
-
     unSuccessful({Always: false})
     unSuccessful({never: false})
     unSuccessful({Always: {}})
@@ -37,7 +34,6 @@ describe("assures the correct schema is created from `createConditionSchema`", (
   test("Equal", () => {
     successAndMatchObj({Equal: ""})
     successAndMatchObj({Equal: "asdf"})
-
     unSuccessful({Equal: 3})
     unSuccessful({Equal: null})
     unSuccessful({Equal: undefined})
@@ -47,12 +43,20 @@ describe("assures the correct schema is created from `createConditionSchema`", (
     successAndMatchObj({Inside: []})
     successAndMatchObj({Inside: [""]})
     successAndMatchObj({Inside: ["asdf", "", "foo"]})
-
     unSuccessful({Inside: ["asdf", "", 34]})
     unSuccessful({Inside: [3]})
     unSuccessful({Inside: [null]})
     unSuccessful({Inside: [undefined]})
     unSuccessful({Inside: {key: "undefined"}})
+  })
+
+  test("StringContains", () => {
+    successAndMatchObj({StringContains: {value: "", ignoreCase: true}})
+    successAndMatchObj({StringContains: {value: "string1", ignoreCase: false}})
+    unSuccessful({StringContains: {value: 2, ignoreCase: false}})
+    unSuccessful({StringContains: {value: ""}})
+    unSuccessful({StringContains: {ignoreCase: true}})
+    unSuccessful({StringContains: null})
   })
 
   const validStringConditions = [
@@ -61,7 +65,7 @@ describe("assures the correct schema is created from `createConditionSchema`", (
     {Equal: ""},
     {Equal: "asdf"},
     {Inside: []},
-    {Inside: ["asdf", "", "foo"]}
+    {Inside: ["asdf", "", "foo"]},
   ]
   const invalidStringConditions = [
     {Always: false},
@@ -72,11 +76,12 @@ describe("assures the correct schema is created from `createConditionSchema`", (
     {Inside: ["asdf", "", 34]},
     [undefined],
     {key: "undefined"},
-    {Equal: {key: "undefined"}}
+    {Equal: {key: "undefined"}},
   ]
 
   test("ListAnyElement", () => {
     for (const valid of [...validStringConditions, invalidStringConditions]) {
+      valid
       unSuccessful({ListAnyElement: valid})
     }
   })
@@ -86,6 +91,7 @@ describe("assures the correct schema is created from `createConditionSchema`", (
       successAndMatchObj({Or: [valid]})
     }
     for (const invalid of invalidStringConditions) {
+      invalid
       unSuccessful({Or: [invalid]})
     }
     successAndMatchObj({Or: validStringConditions})
@@ -98,6 +104,7 @@ describe("assures the correct schema is created from `createConditionSchema`", (
       successAndMatchObj({And: [valid]})
     }
     for (const invalid of invalidStringConditions) {
+      invalid
       unSuccessful({And: [invalid]})
     }
     successAndMatchObj({And: validStringConditions})
@@ -109,16 +116,7 @@ describe("assures the correct schema is created from `createConditionSchema`", (
 
 describe("assures the correct schema is created from `createConditionSchema` with objects", () => {
   const animalParseSchema = (b: any) =>
-    createConditionSchema(animalSchema).safeParse(b)
-
-  const successAndMatchObj = (b: any) =>
-    expect(animalParseSchema(b)).toMatchObject({
-      success: true,
-      data: b
-    })
-
-  const unSuccessful = (b: any) =>
-    expect(animalParseSchema(b).success).toBe(false)
+    createConditionSchema(animalSchema).parse(b)
 
   test("Invalid input", () => {
     const validAnimalConditions: Condition<Animal>[] = [
@@ -132,13 +130,13 @@ describe("assures the correct schema is created from `createConditionSchema` wit
       {
         parents: {
           ListAnyElement: {
-            And: [{gender: {Equal: "Male"}}, {_id: {Inside: ["123-father"]}}]
-          }
-        }
-      }
+            And: [{gender: {Equal: "Male"}}, {_id: {Inside: ["123-father"]}}],
+          },
+        },
+      },
     ]
     for (const c of validAnimalConditions) {
-      successAndMatchObj(c)
+      expect(animalParseSchema(c)).toMatchObject(c)
     }
     const invalidAnimalConditions = [
       {Always: false},
@@ -154,14 +152,16 @@ describe("assures the correct schema is created from `createConditionSchema` wit
             And: [
               {gender: {Equal: "Male"}},
               {_id: {Inside: ["123-father"]}},
-              {never: false}
-            ]
-          }
-        }
-      }
+              {never: false},
+            ],
+          },
+        },
+      },
     ]
     for (const c of invalidAnimalConditions) {
-      unSuccessful(c)
+      expect(() => {
+        animalParseSchema(c)
+      }).toThrow(Error)
     }
   })
 })

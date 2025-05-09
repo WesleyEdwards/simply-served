@@ -13,6 +13,20 @@ export function evalCondition<T>(item: T, condition: Condition<T>): boolean {
     return condition.Equal === item
   }
 
+  if ("GreaterThan" in condition) {
+    return item > condition.GreaterThan
+  }
+  if ("GreaterThanOrEqual" in condition) {
+    return item >= condition.GreaterThanOrEqual
+  }
+
+  if ("LessThan" in condition) {
+    return item < condition.LessThan
+  }
+  if ("LessThanOrEqual" in condition) {
+    return item <= condition.LessThanOrEqual
+  }
+
   if ("Inside" in condition) {
     return condition.Inside.some((i) => areEqual(item, i))
   }
@@ -29,6 +43,17 @@ export function evalCondition<T>(item: T, condition: Condition<T>): boolean {
   if ("ListAnyElement" in condition) {
     if (!Array.isArray(item)) throw new Error("Invalid condition")
     return item.some((value) => evalCondition(value, condition.ListAnyElement))
+  }
+  if ("StringContains" in condition) {
+    if (typeof item === "string") {
+      if (condition.StringContains.ignoreCase) {
+        return item
+          .toLowerCase()
+          .includes(condition.StringContains.value.toLowerCase())
+      } else {
+        return item.includes(condition.StringContains.value)
+      }
+    }
   }
 
   if (

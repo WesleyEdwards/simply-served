@@ -1,1 +1,2 @@
-export * from "./DataStore"
+export * from "./localCollection"
+export * from "./persistentDb"

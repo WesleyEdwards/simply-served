@@ -1,42 +1,74 @@
 import {Collection, Filter, OptionalUnlessRequiredId} from "mongodb"
-import {DbQueries, HasId} from "../server/DbClient"
+import {HasId, DbMethods} from "../server/DbMethods"
 import {conditionToFilter} from "./conditionToFilter"
-import {Condition} from "condition"
+import {Condition, Query} from "../condition"
+import {InternalServerError, NotFoundError} from "../server"
+// const { inspect } = require('node:util');
 
 /**
- *
  * @param db Mongo Db
  * @param collectionPath Path to the model collection
- * @returns Functions for safely reading and manipulating model data
+ * @returns Functions for reading and manipulating model data
  */
-export function modelDbQueries<T extends HasId>(
+export function mongoQueries<T extends HasId>(
   db: any,
   collectionPath: string
-): DbQueries<T> {
+): DbMethods<T> {
   const collection: Collection<T> = db.collection(collectionPath)
 
   return {
-    insertOne: async (newItem: T) => {
-      const {acknowledged} = await collection.insertOne(
-        newItem as OptionalUnlessRequiredId<T>
-      )
-      if (acknowledged) {
-        return {success: true, data: newItem}
+    findOneById: async (id: string) => {
+      const item = (await collection.findOne({
+        _id: id,
+      } as Filter<T>)) as T | null
+      if (!item) {
+        throw new NotFoundError(`item with id ${id} not found`)
       }
-      return {success: false, error: "Unknown error"}
+      return item
     },
     findOne: async (filter) => {
       const item = (await collection.findOne(
         conditionToFilter(filter)
       )) as T | null
       if (item) {
-        return {success: true, data: item}
+        return item
       }
-      return {success: false, error: "unable to find Item"}
+      throw new NotFoundError(
+        `No item satisfying condition ${filter} could be found`
+      )
     },
-    findMany: async (filter: Condition<T>) => {
-      const items = collection.find(conditionToFilter(filter))
-      return (await items.toArray()) as T[]
+    findMany: async (query: Query<T>) => {
+      const c = query.condition ? conditionToFilter(query.condition) : {}
+      try {
+        // console.log(inspect(c, {depth: null}))
+        const items = collection.find(c, {
+          limit: query.limit ?? 100,
+        })
+        return (await items.toArray()) as T[]
+      } catch (e: any) {
+        throw new InternalServerError(e.message)
+      }
+    },
+    insertOne: async (newItem: T) => {
+      const {acknowledged} = await collection.insertOne(
+        newItem as OptionalUnlessRequiredId<T>
+      )
+      if (acknowledged) {
+        return newItem
+      }
+
+      throw new InternalServerError(
+        `Unable to insert item with ${newItem._id} ID`
+      )
+    },
+    insertMany: async (items) => {
+      const {acknowledged} = await collection.insertMany(
+        items as OptionalUnlessRequiredId<T>[]
+      )
+      if (acknowledged) {
+        return items
+      }
+      throw new InternalServerError(`Unable to insert ${items.length} items`)
     },
     updateOne: async (id, item) => {
       const value = await collection.findOneAndUpdate(
@@ -45,22 +77,18 @@ export function modelDbQueries<T extends HasId>(
         {returnDocument: "after"}
       )
       if (!value) {
-        return {success: false, error: "unable to find item"}
+        throw new InternalServerError("Unable to update item")
       }
-      return {success: true, data: value as T}
+      return value as T
     },
-    deleteOne: async (id, condition) => {
-      const c: Filter<T> = condition
-        ? conditionToFilter({
-            And: [{_id: {Equal: id}}, condition]
-          } as Condition<T>)
-        : conditionToFilter({_id: {Equal: id}} as Condition<T>)
+    deleteOne: async (id) => {
+      const c: Filter<T> = conditionToFilter({_id: {Equal: id}} as Condition<T>)
 
       const item = await collection.findOneAndDelete(c)
       if (!item) {
-        throw new Error("Item not found")
+        throw new InternalServerError("Unable to delete item")
       }
       return item as T
-    }
+    },
   }
 }
