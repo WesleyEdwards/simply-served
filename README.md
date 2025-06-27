@@ -39,7 +39,7 @@ Get started with an example server:
 
 ```typescript
 // Basic usage of Simply Served
-import {SimplyServer} from "simply-served"
+import {createSimplyServer} from "simply-served"
 import {z} from "zod"
 import express from "express"
 
