@@ -73,5 +73,7 @@ const server = createSimplyServer<{db: Db; auth: User}>({
 
 const app = express()
 server.generateEndpoints(app)
-app.listen()
+app.listen(8080, () => {
+  console.log("Running on port 8080")
+});
 ```
