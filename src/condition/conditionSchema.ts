@@ -22,7 +22,7 @@ export const createQuerySchema = <T>(
 })
 
 export const createConditionSchema = <T>(
-  schema: z.ZodType<T, any, any>
+  schema: z.ZodType<T>
 ): Parsable<Condition<T>> => ({
   parse: (body: any) => {
     if (
@@ -63,8 +63,8 @@ export const createConditionSchema = <T>(
     if (key === "ListAnyElement") {
       if (schema instanceof z.ZodArray) {
         // Test
-        createConditionSchema(schema.element).parse(body[key])
-        return z.object({ListAnyElement: z.any(body[key])}).parse(body)
+        createConditionSchema(schema.element as any).parse(body[key])
+        return z.object({ListAnyElement: z.any()}).parse(body)
       }
     }
     if (key === "StringContains") {
@@ -87,7 +87,7 @@ export const createConditionSchema = <T>(
         // Test
         others.parse(item)
       }
-      return z.object({[key]: z.any({[key]: body[key]})}).parse(body)
+      return z.object({[key]: z.any()}).parse(body)
     }
 
     if (
@@ -103,7 +103,7 @@ export const createConditionSchema = <T>(
       const subSchema = createConditionSchema((schema.shape as any)[key])
       // Test
       subSchema.parse(body[key])
-      return z.object({[key]: z.any(body[key])}).parse(body)
+      return z.object({[key]: z.any()}).parse(body)
     }
     throw new ParseError("Invalid condition. Options exhausted")
   },

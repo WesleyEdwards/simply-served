@@ -35,40 +35,43 @@ Whether you're building a simple application or a complex API, Simply Served pro
 ## Example
 
 Get started with an example server:  
-[👉 Example Server on GitHub](https://github.com/WesleyEdwards/simply-served/tree/main/example/src)
+[👉 Example Server on GitHub](https://github.com/WesleyEdwards/simply-served-example)
 
 ```typescript
-// Basic usage of Simply Served
-import {createSimplyServer} from "simply-served"
-import {z} from "zod"
-import express from "express"
+type User = {_id: string; name: string}
+type Db = {user: DbMethods<User>}
 
-const server = createSimplyServer({
+const server = createSimplyServer<{db: Db; auth: User}>({
   initContext: {
-    db: myDatabase,
-  },
-  controllers: {
-    user: modelRestEndpoints({
-      // Database access
-      collection: (db) => db.user,
-      // Schema validation
-      validator: z.object({
-        _id: z.string().uuid(),
-        name: z.string(),
-      }),
-      // permissions defining who can do what
-      permissions: {
-        create: {type: "publicAccess"},
-        read: {type: "publicAccess"},
-        modify: {
-          type: "modelAuth",
-          check: ({myUserId}) => ({_id: {Equal: myUserId}}),
-        },
-        delete: {type: "notAllowed"},
-      },
+    db: persistentDb({
+      user: [{_id: "1", name: "John Doe"}],
     }),
   },
+  getAuth: bearerTokenAuth("super-secret-encryption-key"),
+  controllers: [
+    {
+      path: "/user",
+      routes: modelRestEndpoints({
+        validator: z.object({
+          _id: z.uuid(),
+          name: z.string(),
+        }),
+        collection: (db) => db.user,
+        permissions: {
+          create: {type: "publicAccess"},
+          read: {type: "publicAccess"},
+          modify: {
+            type: "modelAuth",
+            check: ({_id}) => ({_id: {Equal: _id}}),
+          },
+          delete: {type: "notAllowed"},
+        },
+      }),
+    },
+  ],
 })
 
-server.generateEndpoints(express())
+const app = express()
+server.generateEndpoints(app)
+app.listen()
 ```
