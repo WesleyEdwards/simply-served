@@ -5,7 +5,7 @@ export type Method = "get" | "put" | "post" | "delete"
 
 export type ExpressType = ReturnType<typeof express>
 
-export type ServerContext = {
+export interface ServerContext {
   db: any
   auth: any
 }
