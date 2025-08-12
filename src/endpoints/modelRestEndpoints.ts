@@ -6,7 +6,7 @@ import {createQuerySchema} from "../condition/conditionSchema"
 import {ZodType} from "zod"
 import {partialValidator} from "../server"
 import {evalCondition} from "../condition"
-import {RequestWithAuth, RequestWithCtx, ServerContext} from "../types"
+import {RequestWithAuth, ServerContext} from "../types"
 
 export type BuilderParams<C extends ServerContext, T extends HasId> = {
   validator: ZodType<T, any, any>
@@ -71,8 +71,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: `/detail/:id`,
         }),
         method: "get",
-        fun: async (r, res, auth) => {
-          const req = r as unknown as RequestWithAuth<C> & RequestWithCtx<C>
+        fun: async (r, res) => {
+          const req = r as RequestWithAuth<C>
           if (!req.params.id) {
             return res.status(400).json({error: "Provide a valid id"})
           }
@@ -104,8 +104,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: `/query`,
         }),
         method: "post",
-        fun: async (r, res, auth) => {
-          const req = r as unknown as RequestWithAuth<C> & RequestWithCtx<C>
+        fun: async (r, res) => {
+          const req = r as RequestWithAuth<C>
           const items = await builderInfo.collection(req.db).findMany({
             condition: {
               And: [
@@ -136,7 +136,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         }),
         method: "post",
         fun: async (r, res, auth) => {
-          const req = r as unknown as RequestWithAuth<C> & RequestWithCtx<C>
+          const req = r as unknown as RequestWithAuth<C>
           const {body} = req
 
           const canCreate = evalCondition(
@@ -174,7 +174,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: "/modify/:id",
         }),
         fun: async (r, res, auth) => {
-          const req = r as unknown as RequestWithAuth<C> & RequestWithCtx<C>
+          const req = r as unknown as RequestWithAuth<C>
           const {body} = req
 
           if (!req.params.id) {
@@ -212,8 +212,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: "/:id",
           type: "id",
         }),
-        fun: async (r, res, auth) => {
-          const req = r as unknown as RequestWithAuth<C> & RequestWithCtx<C>
+        fun: async (r, res) => {
+          const req = r as RequestWithAuth<C>
 
           if (!req.params.id) {
             return res.status(400).json({error: "Provide a valid id"})

@@ -1,6 +1,6 @@
 import express, {Express, Response, Request} from "express"
 import {AuthPath, Path} from "../endpoints"
-import {Method, RequestWithCtx, ServerContext} from "../types"
+import {Method, RequestWithAuth, RequestWithCtx, ServerContext} from "../types"
 import {UnauthorizedError} from "./errorHandling"
 
 export type EndpointBuilderType<
@@ -58,14 +58,14 @@ export function addController<C extends ServerContext>(
     })
 
     router[method](path.route, async (req, res): Promise<any> => {
+      let ids: Record<string, string> = {}
       if (path.type === "id") {
         const p = req.params as any
         const nameOfId = path.route.split(":").at(1)
         if (!nameOfId) {
-          throw new Error("Id not found")
+          throw new Error(`Expected ${nameOfId} but found none`)
         }
         if (authOptions.type === "customAuth") {
-          const ids: Record<string, string> = {}
           const nameOfId = authOptions.path.route.split(":").at(1)
           if (!nameOfId) {
             throw new Error("Id not found")
@@ -75,14 +75,11 @@ export function addController<C extends ServerContext>(
             throw new UnauthorizedError()
           }
         }
-        return fun(req as RequestWithCtx<C>, res, undefined, {
-          [nameOfId]: p[nameOfId],
-        })
-      } else {
-        const auth = (req as any).auth
-        const re = req as RequestWithCtx<C>
-        return fun(re, res, auth, {})
+        ids = p
       }
+
+      const r = req as RequestWithAuth<C>
+      return fun(r, res, r.auth, ids)
     })
     router.use((err: any, _req: Request, res: Response, _next: any) => {
       if (err.status) {
