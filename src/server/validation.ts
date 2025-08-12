@@ -3,7 +3,7 @@ import {v4 as uuidv4} from "uuid"
 import {ParseError} from "./errorHandling"
 
 export const baseObjectSchema = z.object({
-  _id: z.string().uuid().default(uuidv4),
+  _id: z.uuid().default(uuidv4),
 })
 
 export type Parsable<T> = {

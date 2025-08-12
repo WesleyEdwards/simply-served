@@ -28,9 +28,9 @@ const todoRestRoutes = modelRestEndpoints<Ctx, Todo>({
   collection: (db: Ctx["db"]) => db.todo,
   // Model validation schema
   validator: z.object({
-    _id: z.string().uuid(),
+    _id: z.uuid(),
     todoItem: z.string(),
-    owner: z.string().uuid(),
+    owner: z.uuid(),
     done: z.boolean().default(true),
   }),
   // CRUD permissions

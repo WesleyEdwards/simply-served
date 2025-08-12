@@ -14,13 +14,14 @@ type TestContext = {
   }
 }
 
+// These will have errors if the typing is incorrect
 const builders = [
   buildRoute<TestContext>("get")
     .idPath("/sdfth/:myId")
     .withCustomAuth((s, d) => {
       return d.myId === "sdf"
     })
-    .build(({myId}, auth) => {
+    .build((_req, _res, auth, {myId}) => {
       myId
       auth.permissions
       return Promise.reject()
@@ -29,7 +30,7 @@ const builders = [
   buildRoute<TestContext>("get")
     .path("/p")
     .withAuth()
-    .build(async ({db}, auth) => {
+    .build(async ({db}, _res, auth) => {
       auth.userId
       db.users()
       return Promise.reject()
@@ -41,9 +42,8 @@ const builders = [
         item: z.string(),
       }),
     })
-    .build(({req, body, userId}, auth) => {
-      body
-      req.body.item
+    .build(({body}, res, auth, {userId}) => {
+      body.item
       auth
       return Promise.reject("id" + userId)
     }),
@@ -52,13 +52,13 @@ const builders = [
     .withAuth()
     .withBody({
       validator: z.object({
-        _id: z.string().uuid(),
+        _id: z.uuid(),
         todoItem: z.string(),
-        owner: z.string().uuid(),
+        owner: z.uuid(),
         done: z.boolean().default(true),
       }),
     })
-    .build(async ({res, db, req, id}, auth) => {
+    .build(async (req, res, auth) => {
       req.body
       auth.permissions
       throw new Error("")
@@ -70,7 +70,7 @@ const builders = [
     .withBody({
       validator: z.object({levels: z.array(z.string())}),
     })
-    .build(async ({req, res, db}, auth) => {
+    .build(async ({db}, res, auth) => {
       auth
       return res.json({})
     }),
