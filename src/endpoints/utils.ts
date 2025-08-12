@@ -1,5 +1,6 @@
 import {ServerContext, Controller} from "../types"
-import {BuilderParams, buildRoute, HasId, modelRestEndpoints, Route} from "../"
+import {BuilderParams, buildRoute, modelRestEndpoints} from "../"
+import { HasId, Route } from "../server"
 
 /**
  * Utility function to improve implicit typing for constructing controllers

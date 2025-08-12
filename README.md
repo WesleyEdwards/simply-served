@@ -38,42 +38,42 @@ Get started with an example server:
 [👉 Example Server on GitHub](https://github.com/WesleyEdwards/simply-served-example)
 
 ```typescript
-type User = {_id: string; name: string}
-type Db = {user: DbMethods<User>}
+type Db = { user: DbMethods<User> };
+type ServerCtx = { db: Db; auth: User };
 
-const server = createSimplyServer<{db: Db; auth: User}>({
-  initContext: {
+const app = express();
+
+app.use(bearerTokenMiddleware("super-secret-encryption-key"));
+app.use(
+  addContext<ServerCtx>({
     db: persistentDb({
-      user: [{_id: "1", name: "John Doe"}],
+      user: [{ _id: "1", name: "John Doe" }],
     }),
-  },
-  getAuth: bearerTokenAuth("super-secret-encryption-key"),
-  controllers: [
-    {
-      path: "/user",
-      routes: modelRestEndpoints({
-        validator: z.object({
-          _id: z.uuid(),
-          name: z.string(),
-        }),
-        collection: (db) => db.user,
-        permissions: {
-          create: {type: "publicAccess"},
-          read: {type: "publicAccess"},
-          modify: {
-            type: "modelAuth",
-            check: ({_id}) => ({_id: {Equal: _id}}),
-          },
-          delete: {type: "notAllowed"},
-        },
-      }),
-    },
-  ],
-})
+  })
+);
 
-const app = express()
-server.generateEndpoints(app)
-app.listen(8080, () => {
-  console.log("Running on port 8080")
+addController<ServerCtx>(app, {
+  path: "/user",
+  routes: modelRestEndpoints({
+    validator: z.object({
+      _id: z.uuid(),
+      name: z.string(),
+    }),
+    collection: (db) => db.user,
+    permissions: {
+      create: { type: "publicAccess" },
+      read: { type: "publicAccess" },
+      modify: {
+        type: "modelAuth",
+        check: ({ _id }) => ({ _id: { Equal: _id } }),
+      },
+      delete: { type: "notAllowed" },
+    },
+  }),
 });
+
+app.listen(8080, () => {
+  console.log("Listening on port 8080");
+});
+
 ```

@@ -1,6 +1,6 @@
 import express, {Express, Response, Request} from "express"
 import {AuthPath, Path} from "../endpoints"
-import {Method, WithoutAuth, ServerContext, SimpleMiddleware} from "../types"
+import {Method, RequestWithCtx, ServerContext} from "../types"
 import {UnauthorizedError} from "./errorHandling"
 
 export type EndpointBuilderType<
@@ -9,13 +9,10 @@ export type EndpointBuilderType<
   Body,
   A extends AuthPath<C, P>
 > = (
-  info: {
-    req: Request<any, any, Body>
-    body: Body
-    res: Response
-  } & IdObjFromPath<P> &
-    Omit<C, "auth">,
-  auth: A extends {type: "publicAccess"} ? C["auth"] | undefined : C["auth"]
+  req: RequestWithCtx<C, Body>,
+  res: Response,
+  auth: A extends {type: "publicAccess"} ? C["auth"] | undefined : C["auth"],
+  ids: IdObjFromPath<P>
 ) => Promise<Response<any, Record<string, any>>>
 
 export type IdObjFromPath<P extends Path> = {
@@ -33,49 +30,60 @@ export type Route<
   method: Method
 }
 
+export function addController<C extends ServerContext>(
+  app: Express,
+  controllerDef: {
+    path: `/${string}`
+    routes: Route<C>[]
+  }
+) {
+  controller(controllerDef.path, controllerDef.routes)(app)
+}
+
 export function controller<C extends ServerContext>(
   basePath: `/${string}`,
   routes: Route<C>[]
 ) {
-  return (
-    app: Express,
-    initCxt: WithoutAuth<C>,
-    getAuth: SimpleMiddleware<C>
-  ) => {
+  return (app: Express) => {
     const router = express.Router()
     routes.forEach((route) => {
       const {authPath: authOptions, method, fun} = route
-      const p = authOptions.path.route
+      const path = authOptions.path
 
-      router.use(p, async (req, _, next): Promise<any> => {
+      router.use(path.route, async (req, _, next): Promise<any> => {
         const sameMethod = req.method.toLowerCase() === method
         if (!sameMethod) {
           return next()
         }
-        verifyAuth(req, initCxt, authOptions, getAuth)
+        verifyAuth(req, authOptions)
         next()
       })
 
-      router[method](p, async (req, res): Promise<any> => {
-        const {auth, ...rest} = verifyAuth(req, initCxt, authOptions, getAuth)
-        if (authOptions.path.type === "id") {
+      router[method](path.route, async (req, res): Promise<any> => {
+        if (path.type === "id") {
           const p = req.params as any
-          const nameOfId = authOptions.path.route.split(":").at(1)
+          const nameOfId = path.route.split(":").at(1)
           if (!nameOfId) {
             throw new Error("Id not found")
           }
-          return (fun as any)(
-            {
-              [nameOfId]: p[nameOfId],
-              req,
-              res,
-              body: req.body,
-              ...rest,
-            },
-            auth
-          )
+          if (authOptions.type === "customAuth") {
+            const ids: Record<string, string> = {}
+            const nameOfId = authOptions.path.route.split(":").at(1)
+            if (!nameOfId) {
+              throw new Error("Id not found")
+            }
+            const auth = (req as any).auth
+            if (!authOptions.check(auth, ids)) {
+              throw new UnauthorizedError()
+            }
+          }
+          return fun(req as RequestWithCtx<C>, res, undefined, {
+            [nameOfId]: p[nameOfId],
+          })
         } else {
-          return (fun as any)({req, res, body: req.body, ...rest}, auth)
+          const auth = (req as any).auth
+          const re = req as RequestWithCtx<C>
+          return fun(re, res, auth, {})
         }
       })
       router.use((err: any, _req: Request, res: Response, _next: any) => {
@@ -92,37 +100,21 @@ export function controller<C extends ServerContext>(
 
 function verifyAuth<Ctx extends ServerContext>(
   req: Request,
-  clients: WithoutAuth<Ctx>,
-  authOptions: AuthPath<Ctx, Path>,
-  getAuth: (req: Request) => NonNullable<Ctx["auth"]> | undefined
-): Ctx {
-  const auth = getAuth(req)
+  authOptions: AuthPath<Ctx, Path>
+) {
+  const auth = (req as any).auth
   if (auth) {
     if (
       authOptions.type === "publicAccess" ||
       authOptions.type === "authenticated"
     ) {
-      return {...clients, auth} as Ctx
-    }
-
-    if (authOptions.type === "customAuth") {
-      const ids: Record<string, string> = {}
-      if (authOptions.path.type === "id") {
-        const nameOfId = authOptions.path.route.split(":").at(1)
-        if (!nameOfId) {
-          throw new Error("Id not found")
-        }
-        ids[nameOfId] = req.params[nameOfId]
-      }
-
-      if (authOptions.check(auth, ids)) {
-        return {...clients, auth} as Ctx
-      }
+      return
     }
   }
 
   if (authOptions.type === "publicAccess") {
-    return {...clients, auth: undefined} as Ctx
+    return
   }
+
   throw new UnauthorizedError()
 }
