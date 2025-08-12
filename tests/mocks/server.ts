@@ -36,10 +36,10 @@ export const getMockServer = () => {
     next()
   })
 
-  addController(mockApp, {
+  addController<MockCtx>(mockApp, {
     path: "/todo",
-    routes: [
-      ...modelRestEndpoints<MockCtx, TodoType>({
+    routes: {
+      ...modelRestEndpoints({
         collection: (db) => db.todo,
         validator: todoSchema,
         permissions: {
@@ -52,7 +52,7 @@ export const getMockServer = () => {
           },
         },
       }),
-      buildRoute<MockCtx>("post")
+      testEndpoint: buildRoute<MockCtx>("post")
         .path("/")
         .withAuth()
         .withBody({
@@ -63,29 +63,27 @@ export const getMockServer = () => {
             done: z.boolean().default(true),
           }),
         })
-        .build(({body}) => {
+        .build(({body, db}) => {
           body
           throw new Error("")
         }),
-    ],
+    },
   })
-  addController(mockApp, {
+  addController<MockCtx>(mockApp, {
     path: "/user",
-    routes: [
-      ...modelRestEndpoints<MockCtx, UserType>({
-        collection: (db) => db.todo,
-        validator: userSchema,
-        permissions: {
-          read: {type: "publicAccess"},
-          create: {type: "publicAccess"},
-          modify: {type: "publicAccess"},
-          delete: {
-            type: "modelAuth",
-            check: (auth) => ({owner: {Equal: auth.userId}}),
-          },
+    routes: modelRestEndpoints({
+      collection: (db) => db.todo,
+      validator: userSchema,
+      permissions: {
+        read: {type: "publicAccess"},
+        create: {type: "publicAccess"},
+        modify: {type: "publicAccess"},
+        delete: {
+          type: "modelAuth",
+          check: (auth) => ({owner: {Equal: auth.userId}}),
         },
-      }),
-    ],
+      },
+    }),
   })
 
   mockApp.use("/", async (_req, res): Promise<any> => {
@@ -94,8 +92,6 @@ export const getMockServer = () => {
 
   return mockApp
 }
-
-export type TodoType = z.infer<typeof todoSchema>
 
 const todoSchema = z.object({
   _id: z.uuid(),
@@ -109,4 +105,6 @@ const userSchema = z.object({
   owner: z.uuid(),
   done: z.boolean().default(true),
 })
+
+type TodoType = z.infer<typeof todoSchema>
 type UserType = z.infer<typeof userSchema>

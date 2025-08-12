@@ -15,7 +15,7 @@ the `modelRestEndpoints` function generates REST endpoints for a given model. Th
 ```typescript
 function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
-): Route<C, any, boolean>[]
+): Record<string, Route<C>>
 ```
 
 In the context of a server, defining rest endpoints could look like this:

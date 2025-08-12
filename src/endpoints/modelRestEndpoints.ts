@@ -62,9 +62,9 @@ export type ModelActions<S extends ServerContext, T> = {
  */
 export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
-): Route<C, any, any>[] {
-  return [
-    buildRouteRaw({
+): Record<"detail" | "query" | "insert" | "modify" | "delete", Route<C>> {
+  return {
+    detail: buildRouteRaw({
       route: {
         authPath: getAuthOptions(builderInfo.permissions.read, {
           type: "id",
@@ -97,7 +97,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         },
       },
     }),
-    buildRouteRaw({
+    query: buildRouteRaw({
       route: {
         authPath: getAuthOptions(builderInfo.permissions.read, {
           type: "route",
@@ -128,7 +128,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       },
       validator: createQuerySchema(builderInfo.validator),
     }),
-    buildRouteRaw({
+    insert: buildRouteRaw({
       route: {
         authPath: getAuthOptions(builderInfo.permissions.create, {
           type: "route",
@@ -166,7 +166,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         },
       },
     }),
-    buildRouteRaw({
+    modify: buildRouteRaw({
       route: {
         method: "put",
         authPath: getAuthOptions(builderInfo.permissions.modify, {
@@ -189,11 +189,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
             ],
           })
           const intercepted =
-            (await builderInfo.actions?.interceptModify?.(
-              item,
-              body,
-              req
-            )) ?? body
+            (await builderInfo.actions?.interceptModify?.(item, body, req)) ??
+            body
 
           const updated = await builderInfo
             .collection(req.db)
@@ -208,7 +205,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       },
       validator: partialValidator(builderInfo.validator),
     }),
-    buildRouteRaw({
+    delete: buildRouteRaw({
       route: {
         method: "delete",
         authPath: getAuthOptions(builderInfo.permissions.delete, {
@@ -238,7 +235,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         },
       },
     }),
-  ]
+  }
 }
 
 // Can perform action on item

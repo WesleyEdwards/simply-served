@@ -6,8 +6,8 @@ export type Method = "get" | "put" | "post" | "delete"
 export type ExpressType = ReturnType<typeof express>
 
 export interface ServerContext {
-  db: any
-  auth: any
+  db: unknown
+  auth: unknown
 }
 
 export type GetAuthFromRequest<Ctx extends ServerContext> = (
