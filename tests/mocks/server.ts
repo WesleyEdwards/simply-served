@@ -106,5 +106,5 @@ const userSchema = z.object({
   done: z.boolean().default(true),
 })
 
-type TodoType = z.infer<typeof todoSchema>
-type UserType = z.infer<typeof userSchema>
+export type TodoType = z.infer<typeof todoSchema>
+export type UserType = z.infer<typeof userSchema>

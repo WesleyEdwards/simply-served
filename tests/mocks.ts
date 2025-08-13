@@ -2,7 +2,7 @@ import {z} from "zod"
 
 export enum AnimalType {
   Mammal = "Mammal",
-  Reptile = "Reptile"
+  Reptile = "Reptile",
 }
 export type Animal = z.infer<typeof animalSchema>
 
@@ -17,9 +17,9 @@ export const animalSchema = z.object({
     .object({
       _id: z.string(),
       name: z.string(),
-      gender: z.union([z.literal("Male"), z.literal("Female")])
+      gender: z.union([z.literal("Male"), z.literal("Female")]),
     })
-    .array()
+    .array(),
 })
 
 export const dog_test: Animal = {
@@ -33,12 +33,12 @@ export const dog_test: Animal = {
     {
       _id: "123-mother",
       name: "Bella",
-      gender: "Female"
+      gender: "Female",
     },
     {
       _id: "123-father",
       name: "Jack",
-      gender: "Male"
-    }
-  ]
+      gender: "Male",
+    },
+  ],
 }

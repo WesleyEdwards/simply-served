@@ -2,6 +2,7 @@ import express, {Express, Response, Request} from "express"
 import {AuthPath, Path} from "../endpoints"
 import {Method, RequestWithAuth, RequestWithCtx, ServerContext} from "../types"
 import {UnauthorizedError} from "./errorHandling"
+import {MetaInfo} from "../meta"
 
 export type EndpointBuilderType<
   C extends ServerContext,
@@ -28,6 +29,7 @@ export type Route<
   fun: EndpointBuilderType<C, P, Body, Auth>
   authPath: AuthPath<C, P>
   method: Method
+  _meta?: MetaInfo
 }
 
 type ControllerDef<C extends ServerContext> = {

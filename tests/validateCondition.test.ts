@@ -1,5 +1,5 @@
 import {z} from "zod"
-import {Animal, animalSchema, AnimalType} from "./mocks"
+import {Animal, animalSchema} from "./mocks"
 import {createConditionSchema} from "../src/condition/conditionSchema"
 import {Condition} from "../src/condition/condition"
 
@@ -24,7 +24,7 @@ describe("assures the correct schema is created from `createConditionSchema`", (
 
   test("Always & Never", () => {
     successAndMatchObj({Always: true})
-    successAndMatchObj({never: true})
+    successAndMatchObj({Never: true})
     unSuccessful({Always: false})
     unSuccessful({never: false})
     unSuccessful({Always: {}})
@@ -61,7 +61,7 @@ describe("assures the correct schema is created from `createConditionSchema`", (
 
   const validStringConditions = [
     {Always: true},
-    {never: true},
+    {Never: true},
     {Equal: ""},
     {Equal: "asdf"},
     {Inside: []},
@@ -115,15 +115,15 @@ describe("assures the correct schema is created from `createConditionSchema`", (
 })
 
 describe("assures the correct schema is created from `createConditionSchema` with objects", () => {
-  const animalParseSchema = (b: any) =>
-    createConditionSchema(animalSchema).parse(b)
+  const animalParseSchema = createConditionSchema(animalSchema)
 
   test("Invalid input", () => {
     const validAnimalConditions: Condition<Animal>[] = [
       {Always: true},
+      {_id: {Always: true}},
       {_id: {Equal: "1234"}},
       {age: {Equal: 4}},
-      {type: {Inside: [AnimalType.Mammal]}},
+      {type: {Inside: []}},
       {parents: {ListAnyElement: {gender: {Equal: "Male"}}}},
       {parents: {ListAnyElement: {Always: true}}},
       {parents: {ListAnyElement: {name: {Equal: "Bella"}}}},
@@ -136,7 +136,7 @@ describe("assures the correct schema is created from `createConditionSchema` wit
       },
     ]
     for (const c of validAnimalConditions) {
-      expect(animalParseSchema(c)).toMatchObject(c)
+      expect(animalParseSchema.parse(c)).toMatchObject(c)
     }
     const invalidAnimalConditions = [
       {Always: false},
@@ -160,7 +160,7 @@ describe("assures the correct schema is created from `createConditionSchema` wit
     ]
     for (const c of invalidAnimalConditions) {
       expect(() => {
-        animalParseSchema(c)
+        animalParseSchema.parse(c)
       }).toThrow(Error)
     }
   })

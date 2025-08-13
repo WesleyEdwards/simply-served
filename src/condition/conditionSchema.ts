@@ -1,6 +1,4 @@
-import {z} from "zod"
-import {Parsable} from "../server/validation"
-import {ParseError} from "../server/errorHandling"
+import {z, ZodType} from "zod"
 import {Condition} from "./condition"
 
 export type Query<T> = {
@@ -8,103 +6,69 @@ export type Query<T> = {
   limit?: number
 }
 
-export const createQuerySchema = <T>(
-  schema: z.ZodType<T, any, any>
-): Parsable<Query<T>> => ({
-  parse: (data: any) => {
-    return {
-      condition: data.condition
-        ? createConditionSchema(schema).parse(data.condition)
-        : undefined,
-      limit: typeof data.limit === "number" ? data.limit : undefined,
-    }
-  },
-})
+export const createQuerySchema = <T>(schema: z.ZodType<T, any, any>) =>
+  z.object({
+    limit: z.number().optional(),
+    condition: createConditionSchema(schema),
+  })
 
-export const createConditionSchema = <T>(
-  schema: z.ZodType<T>
-): Parsable<Condition<T>> => ({
-  parse: (body: any) => {
-    if (
-      typeof body !== "object" ||
-      body === null ||
-      body === undefined ||
-      Array.isArray(body)
-    ) {
-      throw new ParseError("Invalid condition type")
-    }
+export function createConditionSchema<T extends ZodType>(
+  base: T
+): z.ZodTypeAny {
+  const variants: z.ZodTypeAny[] = []
 
-    const bodyKeys = Object.keys(body)
-    if (bodyKeys.length !== 1) {
-      throw new ParseError("Single key expected")
-    }
+  variants.push(z.object({Always: z.literal(true)}))
+  variants.push(z.object({Never: z.literal(true)}))
 
-    const key = bodyKeys[0]
+  variants.push(z.object({Equal: base}))
+  variants.push(z.object({GreaterThan: base}))
+  variants.push(z.object({GreaterThanOrEqual: base}))
+  variants.push(z.object({LessThan: base}))
+  variants.push(z.object({LessThanOrEqual: base}))
 
-    if (key === "Always" || key === "never") {
-      return z.object({[key]: z.literal(true)}).parse(body)
-    }
+  variants.push(z.object({Inside: z.array(base)}))
 
-    if (
-      [
-        "Equal",
-        "GreaterThan",
-        "GreaterThanOrEqual",
-        "LessThan",
-        "LessThanOrEqual",
-      ].includes(key)
-    ) {
-      return z.object({[key]: schema}).parse(body)
-    }
+  const lazyCondition = z.lazy(() => createConditionSchema(base))
+  variants.push(z.object({Or: z.array(lazyCondition)}))
+  variants.push(z.object({And: z.array(lazyCondition)}))
 
-    if (key === "Inside") {
-      return z.object({Inside: schema.array()}).parse(body)
+  if (base instanceof z.ZodArray) {
+    variants.push(
+      z.object({
+        ListAnyElement: z.lazy(() =>
+          createConditionSchema(base.element as any)
+        ),
+      })
+    )
+  }
+
+  if (base.def.type === "string") {
+    variants.push(
+      z.object({
+        StringContains: z.object({
+          value: z.string(),
+          ignoreCase: z.boolean(),
+        }),
+      })
+    )
+  }
+
+  if (base instanceof z.ZodObject) {
+    const shape = base.shape
+    const nestedShape: Record<string, z.ZodTypeAny> = {}
+    for (const key in shape) {
+      nestedShape[key] = z.lazy(() => createConditionSchema(base.shape[key]))
     }
-    if (key === "ListAnyElement") {
-      if (schema instanceof z.ZodArray) {
-        // Test
-        createConditionSchema(schema.element as any).parse(body[key])
-        return z.object({ListAnyElement: z.any()}).parse(body)
+    variants.push(z.object(nestedShape).partial())
+  }
+
+  return z.union(variants).refine((arg) => {
+    // When it gets parsed out, throw an error if it's an empty object
+    if (typeof arg === "object" && arg !== null) {
+      if (Object.keys(arg).length === 0) {
+        throw Error("Invalid condition")
       }
     }
-    if (key === "StringContains") {
-      return z
-        .object({
-          StringContains: z.object({
-            value: z.string(),
-            ignoreCase: z.boolean(),
-          }),
-        })
-        .parse(body)
-    }
-
-    if (key === "And" || key === "Or") {
-      if (!Array.isArray(body[key])) {
-        throw new ParseError(`invalid condition for body ${body}, key: ${key}`)
-      }
-      const others = createConditionSchema(schema)
-      for (const item of body[key]) {
-        // Test
-        others.parse(item)
-      }
-      return z.object({[key]: z.any()}).parse(body)
-    }
-
-    if (
-      "shape" in schema &&
-      typeof schema.shape === "object" &&
-      schema.shape !== null
-    ) {
-      const valueKeys = Object.keys(schema.shape)
-      if (!valueKeys.includes(key)) {
-        throw new ParseError(`Invalid key condition ${key}`)
-      }
-
-      const subSchema = createConditionSchema((schema.shape as any)[key])
-      // Test
-      subSchema.parse(body[key])
-      return z.object({[key]: z.any()}).parse(body)
-    }
-    throw new ParseError("Invalid condition. Options exhausted")
-  },
-})
+    return arg
+  })
+}

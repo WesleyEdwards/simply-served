@@ -3,13 +3,13 @@ import {DbMethods, HasId} from "../server/DbMethods"
 import {Condition} from "../condition/condition"
 import {AuthPath, buildRouteRaw, Path} from "./buildRoute"
 import {createQuerySchema} from "../condition/conditionSchema"
-import {ZodType} from "zod"
+import {ZodObject} from "zod"
 import {partialValidator} from "../server"
 import {evalCondition} from "../condition"
 import {RequestWithAuth, ServerContext} from "../types"
 
 export type BuilderParams<C extends ServerContext, T extends HasId> = {
-  validator: ZodType<T, any, any>
+  validator: ZodObject<any, any>
   collection: (clients: C["db"]) => DbMethods<T>
   permissions: ModelPermissions<C, T>
   actions?: ModelActions<C, T>
