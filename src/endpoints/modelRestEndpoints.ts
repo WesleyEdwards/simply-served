@@ -71,21 +71,14 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: `/detail/:id`,
         }),
         method: "get",
-        fun: async (r, res) => {
+        fun: async (r, res, auth, {id}) => {
           const req = r as RequestWithAuth<C>
-          if (!req.params.id) {
-            return res.status(400).json({error: "Provide a valid id"})
-          }
-          const id: string = req.params.id
-          if (!id || typeof id !== "string") {
-            return res.status(400).json("Id required")
-          }
 
           try {
             const item = await builderInfo.collection(req.db).findOne({
               And: [
                 {_id: {Equal: id}},
-                getItemCondition(builderInfo.permissions.read, req.auth),
+                getItemCondition(builderInfo.permissions.read, auth),
               ],
             })
             return res.json(
@@ -104,13 +97,13 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: `/query`,
         }),
         method: "post",
-        fun: async (r, res) => {
+        fun: async (r, res, auth) => {
           const req = r as RequestWithAuth<C>
           const items = await builderInfo.collection(req.db).findMany({
             condition: {
               And: [
                 req.body.condition ?? {Always: true},
-                getItemCondition(builderInfo.permissions.read, req.auth),
+                getItemCondition(builderInfo.permissions.read, auth),
               ],
             },
             limit: req.body.limit,
@@ -128,6 +121,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       },
       validator: createQuerySchema(builderInfo.validator),
     }),
+
     insert: buildRouteRaw({
       route: {
         authPath: getAuthOptions(builderInfo.permissions.create, {
@@ -141,7 +135,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
 
           const canCreate = evalCondition(
             body,
-            getItemCondition(builderInfo.permissions.create, req.auth)
+            getItemCondition(builderInfo.permissions.create, auth)
           )
 
           if (!canCreate) {
@@ -166,6 +160,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         },
       },
     }),
+
     modify: buildRouteRaw({
       route: {
         method: "put",
@@ -173,19 +168,19 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           type: "route",
           route: "/modify/:id",
         }),
-        fun: async (r, res, auth) => {
+        fun: async (r, res, auth, {id}) => {
           const req = r as unknown as RequestWithAuth<C>
           const {body} = req
 
           if (!req.params.id) {
             return res.status(400).json({error: "Provide a valid id"})
           }
-          const id: string = req.params.id
+
 
           const item = await builderInfo.collection(req.db).findOne({
             And: [
               {_id: {Equal: id}},
-              getItemCondition(builderInfo.permissions.modify, req),
+              getItemCondition(builderInfo.permissions.modify, auth),
             ],
           })
           const intercepted =
@@ -205,6 +200,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       },
       validator: partialValidator(builderInfo.validator),
     }),
+
     delete: buildRouteRaw({
       route: {
         method: "delete",
@@ -212,7 +208,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           route: "/:id",
           type: "id",
         }),
-        fun: async (r, res) => {
+        fun: async (r, res, auth) => {
           const req = r as RequestWithAuth<C>
 
           if (!req.params.id) {
@@ -221,7 +217,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           const item = await builderInfo.collection(req.db).findOne({
             And: [
               {_id: {Equal: req.params.id}},
-              getItemCondition(builderInfo.permissions.delete, req),
+              getItemCondition(builderInfo.permissions.delete, auth),
             ],
           })
           await builderInfo.actions?.interceptDelete?.(item, req)
