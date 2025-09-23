@@ -47,10 +47,10 @@ In this example, the `todoRestRoutes` variable will contain an array of routes t
 
 Here's a definition of the http requests that can be made to the generated endpoints:
 
-- `GET /:id` - Get item by id
+- `GET /detail/:id` - Get item by id
 - `POST /insert` - Create a new todo item (body must be a valid instance of `T`)
 - `POST /query` - Query for items (body must be a valid `Query<T>`)
-- `PUT /:id` - Update by id (body must be a valid `Partial<T>`)
+- `PUT /modify/:id` - Update by id (body must be a valid `Partial<T>`)
 - `DELETE /:id` - Delete by id
 
 ## Permissions
