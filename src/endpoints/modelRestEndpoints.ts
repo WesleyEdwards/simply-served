@@ -165,7 +165,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       route: {
         method: "put",
         authPath: getAuthOptions(builderInfo.permissions.modify, {
-          type: "route",
+          type: "id",
           route: "/modify/:id",
         }),
         fun: async (r, res, auth, {id}) => {
@@ -175,7 +175,6 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           if (!req.params.id) {
             return res.status(400).json({error: "Provide a valid id"})
           }
-
 
           const item = await builderInfo.collection(req.db).findOne({
             And: [
@@ -205,8 +204,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
       route: {
         method: "delete",
         authPath: getAuthOptions(builderInfo.permissions.delete, {
-          route: "/:id",
           type: "id",
+          route: "/:id",
         }),
         fun: async (r, res, auth) => {
           const req = r as RequestWithAuth<C>

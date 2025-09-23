@@ -13,4 +13,4 @@ export type Parsable<T> = {
 
 export const partialValidator = <T extends z.ZodRawShape>(
   schema: z.ZodObject<T, any>
-): Parsable<Partial<T>> => schema.partial() as Parsable<Partial<T>>
+): Parsable<Partial<T>> => schema.partial().strict() as Parsable<Partial<T>>

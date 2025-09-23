@@ -111,5 +111,10 @@ function verifyAuth<Ctx extends ServerContext>(
   if (authOptions.type === "publicAccess") {
     return
   }
+  // checked later on
+  if (authOptions.type === "customAuth") {
+    return
+  }
+  
   throw new UnauthorizedError()
 }
