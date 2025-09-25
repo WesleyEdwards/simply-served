@@ -2,7 +2,7 @@
 
 ## Overview
 
-Model Rest Endpoints are auto-generated REST endpoints for a given model.
+Model Rest Endpoints are auto-generated REST endpoints for a given model. This is a slightly watered-down port of Model Endpoints in [LightningServer](https://github.com/lightningkite/lightning-server/blob/version-4/docs/use-as-client.md) (Kotlin Server framework).
 
 ## Purpose
 

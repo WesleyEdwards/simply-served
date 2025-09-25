@@ -2,7 +2,7 @@
 
 ## Overview
 
-This condition system is inspired by MongoDB's query language. The primary goal of this system is to allow flexible condition checking for various types of data, supporting logical operations, comparisons, and nested conditions.
+This condition system is inspired by MongoDB's query language. The primary goal of this system is to allow flexible condition checking for various types of data, supporting logical operations, comparisons, and nested conditions. This is a slightly watered-down port of the condition system in [LightningServer](https://github.com/lightningkite/lightning-server/blob/version-4/docs/use-as-client.md) (Kotlin Server framework).
 
 ## Formal Definition
 

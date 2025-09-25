@@ -21,16 +21,19 @@ The framework focuses on enabling developers to:
 
 Whether you're building a simple application or a complex API, Simply Served provides the tools you need to speed up development.
 
----
 
 ## Key Features
 
 - **Auto-generated Endpoints**: Define your models and permissions, and let the framework handle the REST endpoints.
-- **Database-agnostic**: Use any database by implementing a simple, abstracted interface.
 - **Built-in Validation**: Ensure data integrity with Zod, a powerful and extensible schema validation library.
 - **Express.js Backbone**: Leverage the flexibility and performance of Express.js under the hood.
+- **Database-agnostic**: Use any database by implementing a simple, abstracted interface.
+- **Provided MongoDB Adapter**: Use server condition and query system for the Mongo Driver
 
----
+## Documentation
+- [Model Rest Endpoints](https://github.com/WesleyEdwards/simply-served/blob/main/docs/ModelRestEndpoints.md)
+- [Condition System](https://github.com/WesleyEdwards/simply-served/blob/main/docs/Condition.md)
+
 
 ## Example
 
