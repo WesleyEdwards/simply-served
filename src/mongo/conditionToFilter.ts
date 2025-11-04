@@ -13,33 +13,33 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
   }
   if ("Or" in condition) {
     return {
-      $or: condition.Or.map((cond) => conditionToFilter(cond)) as any,
-    }
+      $or: condition.Or.map((cond) => conditionToFilter(cond)),
+    } as Filter<T>
   }
   if ("And" in condition) {
-    return {$and: condition.And.map((cond) => conditionToFilter(cond)) as any}
+    return {$and: condition.And.map((cond) => conditionToFilter(cond))} as Filter<T>
   }
 
   if ("GreaterThan" in condition) {
     return {
-      $gt: condition.GreaterThan as any,
-    }
+      $gt: condition.GreaterThan,
+    } as Filter<T>
   }
   if ("GreaterThanOrEqual" in condition) {
     return {
-      $gte: condition.GreaterThanOrEqual as any,
-    }
+      $gte: condition.GreaterThanOrEqual,
+    } as Filter<T>
   }
 
   if ("LessThan" in condition) {
     return {
-      $lt: condition.LessThan as any,
-    }
+      $lt: condition.LessThan,
+    } as Filter<T>
   }
   if ("LessThanOrEqual" in condition) {
     return {
-      $lte: condition.LessThanOrEqual as any,
-    }
+      $lte: condition.LessThanOrEqual,
+    } as Filter<T>
   }
 
   if ("Always" in condition) {
@@ -51,7 +51,7 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
   }
 
   if ("ListAnyElement" in condition) {
-    return {$elemMatch: conditionToFilter(condition.ListAnyElement)}
+    return {$elemMatch: conditionToFilter(condition.ListAnyElement)} as Filter<T>
   }
 
   if ("StringContains" in condition) {
@@ -60,7 +60,7 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
         condition.StringContains.value,
         condition.StringContains.ignoreCase ? "i" : "g"
       ),
-    }
+    } as Filter<T>
   }
 
   const nested = extractNestedKey(condition)
@@ -70,17 +70,17 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
       $and: nested.condition.And.map((cond) => ({
         [nested.key]: conditionToFilter(cond),
       })),
-    } as any
+    } as Filter<T>
   }
   if ("Or" in nested.condition) {
     return {
       $or: nested.condition.Or.map((cond) => ({
         [nested.key]: conditionToFilter(cond),
       })),
-    } as any
+    } as Filter<T>
   }
 
-  return {[nested.key]: conditionToFilter(nested.condition)} as any
+  return {[nested.key]: conditionToFilter(nested.condition)} as Filter<T>
 }
 
 const extractNestedKey = <T>(
@@ -97,7 +97,7 @@ const extractNestedKey = <T>(
       }
       const [nestedKey, nestedValue] = nestedKeyValue
 
-      if (contitionStrs.includes(nestedKey)) {
+      if (conditionStrs.includes(nestedKey)) {
         return {key: keyString, condition}
       }
 
@@ -110,7 +110,7 @@ const extractNestedKey = <T>(
   }
 }
 
-const contitionStrs = [
+const conditionStrs = [
   "Always",
   "Never",
   "Equal",

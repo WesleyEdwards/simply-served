@@ -4,7 +4,7 @@ import {Condition} from "../condition/condition"
 import {AuthPath, buildRouteRaw, Path} from "./buildRoute"
 import {createQuerySchema} from "../condition/conditionSchema"
 import {ZodObject} from "zod"
-import {partialValidator} from "../server"
+import {InvalidRequestError, partialValidator} from "../server"
 import {evalCondition} from "../condition"
 import {RequestWithAuth, ServerContext} from "../types"
 
@@ -133,8 +133,15 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           const req = r as unknown as RequestWithAuth<C>
           const {body} = req
 
+          const validBody = builderInfo.validator.safeParse(body)
+
+          if (validBody.error) {
+            throw new InvalidRequestError(JSON.stringify(validBody.error))
+          }
+          const parsed = validBody.data as T
+
           const canCreate = evalCondition(
-            body,
+            parsed,
             getItemCondition(builderInfo.permissions.create, auth)
           )
 
@@ -143,8 +150,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           }
 
           const processed = builderInfo.actions?.interceptCreate
-            ? await builderInfo.actions.interceptCreate(body, req)
-            : body
+            ? await builderInfo.actions.interceptCreate(parsed, req)
+            : parsed
 
           try {
             const created = await builderInfo

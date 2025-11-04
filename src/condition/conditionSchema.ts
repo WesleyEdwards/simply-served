@@ -4,11 +4,13 @@ import {Condition} from "./condition"
 export type Query<T> = {
   condition?: Condition<T>
   limit?: number
+  skip?: number
 }
 
 export const createQuerySchema = <T>(schema: z.ZodType<T, any, any>) =>
   z.object({
     limit: z.number().optional(),
+    skip: z.number().optional(),
     condition: createConditionSchema(schema),
   })
 
