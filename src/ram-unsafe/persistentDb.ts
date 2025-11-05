@@ -12,59 +12,33 @@ const fs = require("node:fs")
  *
  * @returns a Db that will save to local files
  */
-export const persistentDb = <In extends Record<string, any[]>>(
-  dbDef: In,
-  dbPath?: string
-): {[K in keyof In]: DbMethods<In[K][number]>} => {
-  const db = {} as {[K in keyof In]: DbMethods<In[K][number]>}
 
-  const path = dbPath ?? "./db-store"
+export const persistentDb = <T extends Record<string, any>>(
+  dbPath = "./db-store"
+) => {
+  if (!fs.existsSync(dbPath)) fs.mkdirSync(dbPath, {recursive: true})
 
-  if (!fs.existsSync(path)) {
-    fs.mkdirSync(path, {recursive: true})
-  }
+  const cache: Record<string, LocalCollection<any>> = {}
 
-  for (const [key, defaultItems] of Object.entries(dbDef)) {
-    const file = `${path}/${key}.json`
+  const handler: ProxyHandler<any> = {
+    get(_, prop: string) {
+      if (typeof prop !== "string") return undefined
 
-    const handler: ProxyHandler<LocalCollection<any>> = {
-      get(target, prop, receiver) {
-        const value = Reflect.get(target, prop, receiver)
-        if (typeof value === "function") {
-          return (...args: any[]) => {
-            const result = value.apply(target, args)
-            if (
-              ["insertOne", "updateOne", "deleteOne", "insertMany"].includes(prop as string)
-            ) {
-              const json = JSON.stringify(target.items)
-              fs.writeFile(file, json, "utf8", (err: any) => {
-                if (err) {
-                  console.error("err", err)
-                }
-              })
-            }
-            return result
+      if (!cache[prop]) {
+        const file = `${dbPath}/${prop}.json`
+        let items: any[] = []
+        if (fs.existsSync(file)) {
+          try {
+            items = JSON.parse(fs.readFileSync(file, "utf8"))
+          } catch (err) {
+            console.error(`Error parsing ${file}:`, err)
           }
         }
-        return value
-      },
-    }
-
-    let parsed: any = defaultItems
-    if (fs.existsSync(file)) {
-      try {
-        const data = fs.readFileSync(file, "utf8")
-        parsed = JSON.parse(data)
-      } catch (err) {
-        console.error(`Error parsing JSON from ${file}:`, err)
+        cache[prop] = new LocalCollection(items, file)
       }
+      return cache[prop]
     }
-
-    const collection = new LocalCollection(parsed)
-    const proxy = new Proxy(collection, handler as any)
-    // @ts-ignore
-    db[key] = proxy
   }
 
-  return db
+  return new Proxy({}, handler) as {[K in keyof T]: DbMethods<T[K]>}
 }

@@ -16,6 +16,9 @@
     "uuid": "^9.0.1",
     "zod": "4.0.5"
   },
+  "peerDependencies": {
+    "express": "^5.0.0"
+  },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",

@@ -1,55 +1,63 @@
 import {Condition, evalCondition, Query} from "../condition"
 import {DbMethods, HasId} from "../server"
 import {NotFoundError} from "../server/errorHandling"
+
+const fs = require("node:fs")
 export class LocalCollection<T extends HasId> implements DbMethods<T> {
-  constructor(public items: T[]) {}
+  constructor(public items: T[], private file?: string) {}
 
-  findOneById = async (id: string): Promise<T> => {
+  private persist() {
+    if (this.file) {
+      fs.writeFileSync(this.file, JSON.stringify(this.items, null, 2), "utf8")
+    }
+  }
+
+  findOneById = async (id: string) => {
     const item = this.items.find((i) => i._id === id)
-    if (item) {
-      return item
-    }
-    throw new NotFoundError(`item with id ${id} not found`)
-  }
-
-  findOne = async (filter: Condition<T>): Promise<T> => {
-    const filtered = this.items.filter((item) => evalCondition(item, filter))
-
-    const res = filtered.at(0)
-    if (res) {
-      return res
-    }
-    throw new NotFoundError(`item not found`)
-  }
-  findMany = async (query: Query<T>): Promise<T[]> => {
-    const filtered = this.items.filter((item) =>
-      evalCondition(item, query.condition ?? {Always: true})
-    )
-    return filtered.slice(0, query.limit ?? 100)
-  }
-  insertOne = async (item: T) => {
-    this.items = this.items.concat(item)
+    if (!item) throw new NotFoundError(`item with id ${id} not found`)
     return item
   }
+
+  findOne = async (filter: Condition<T>) => {
+    const item = this.items.find((item) => evalCondition(item, filter))
+    if (!item) throw new NotFoundError("item not found")
+    return item
+  }
+
+  findMany = async (query: Query<T>) => {
+    const condition = query.condition ?? {Always: true}
+    
+    return this.items.filter((x) => {
+      return evalCondition(x, condition)
+    })
+  }
+
+  insertOne = async (item: T) => {
+    this.items.push(item)
+    this.persist()
+    return item
+  }
+
   insertMany = async (items: T[]) => {
-    this.items = this.items.concat(items)
+    this.items.push(...items)
+    this.persist()
     return items
   }
-  updateOne = async (id: string, update: Partial<T>): Promise<T> => {
-    const old = this.items.find((i) => i._id === id)
-    if (!old) {
-      throw new NotFoundError(`item with id ${id} not found`)
-    }
-    const modified = {...old, ...update}
-    this.items = [
-      ...this.items.map((item) => (item._id === old._id ? modified : item)),
-    ]
-    return modified
+
+  updateOne = async (id: string, update: Partial<T>) => {
+    const idx = this.items.findIndex((i) => i._id === id)
+    if (idx === -1) throw new NotFoundError(`item with id ${id} not found`)
+    const updated = {...this.items[idx], ...update}
+    this.items[idx] = updated
+    this.persist()
+    return updated
   }
-  deleteOne = async (id: string): Promise<T> => {
-    const old = this.items.find((i) => i._id === id)
-    this.items = [...this.items.filter((i) => i._id !== id)]
-    if (!old) throw new NotFoundError(`item with id ${id} not found`)
-    return old
+
+  deleteOne = async (id: string) => {
+    const idx = this.items.findIndex((i) => i._id === id)
+    if (idx === -1) throw new NotFoundError(`item with id ${id} not found`)
+    const [deleted] = this.items.splice(idx, 1)
+    this.persist()
+    return deleted
   }
 }

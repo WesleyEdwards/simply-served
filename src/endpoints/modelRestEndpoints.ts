@@ -32,7 +32,7 @@ export type ModelPermissions<C extends ServerContext, T> = {
 export type ModelPermOption<C extends ServerContext, T> =
   | {type: "publicAccess"}
   | {type: "authenticated"}
-  | {type: "modelAuth"; check: (auth: C["auth"]) => Condition<T>}
+  | {type: "modelAuth"; check: (ctx: C) => Promise<Condition<T>>}
   | {type: "notAllowed"}
 
 export type ModelActions<S extends ServerContext, T> = {
@@ -78,7 +78,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
             const item = await builderInfo.collection(req.db).findOne({
               And: [
                 {_id: {Equal: id}},
-                getItemCondition(builderInfo.permissions.read, auth),
+                await getItemCondition(builderInfo.permissions.read, req),
               ],
             })
             return res.json(
@@ -99,11 +99,13 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         method: "post",
         fun: async (r, res, auth) => {
           const req = r as RequestWithAuth<C>
+          console.log("FINDING")
+          console.log(await getItemCondition(builderInfo.permissions.read, req))
           const items = await builderInfo.collection(req.db).findMany({
             condition: {
               And: [
                 req.body.condition ?? {Always: true},
-                getItemCondition(builderInfo.permissions.read, auth),
+                await getItemCondition(builderInfo.permissions.read, req),
               ],
             },
             limit: req.body.limit,
@@ -142,7 +144,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
 
           const canCreate = evalCondition(
             parsed,
-            getItemCondition(builderInfo.permissions.create, auth)
+            await getItemCondition(builderInfo.permissions.create, req)
           )
 
           if (!canCreate) {
@@ -186,7 +188,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           const item = await builderInfo.collection(req.db).findOne({
             And: [
               {_id: {Equal: id}},
-              getItemCondition(builderInfo.permissions.modify, auth),
+              await getItemCondition(builderInfo.permissions.modify, req),
             ],
           })
           const intercepted =
@@ -223,7 +225,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           const item = await builderInfo.collection(req.db).findOne({
             And: [
               {_id: {Equal: req.params.id}},
-              getItemCondition(builderInfo.permissions.delete, auth),
+              await getItemCondition(builderInfo.permissions.delete, req),
             ],
           })
           await builderInfo.actions?.interceptDelete?.(item, req)
@@ -241,10 +243,10 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
 }
 
 // Can perform action on item
-const getItemCondition = <C extends ServerContext, T extends HasId>(
+const getItemCondition = async <C extends ServerContext, T extends HasId>(
   perms: ModelPermOption<C, T>,
-  auth: C["auth"]
-): Condition<T> => {
+  ctx: C
+): Promise<Condition<T>> => {
   if (perms.type === "notAllowed") {
     return {Never: true}
   }
@@ -254,7 +256,10 @@ const getItemCondition = <C extends ServerContext, T extends HasId>(
   if (perms.type === "authenticated") {
     return {Always: true}
   }
-  return perms.check(auth)
+  if (perms.type === "modelAuth") {
+    return perms.check(ctx)
+  }
+  throw Error("Invalid perms")
 }
 
 /**
