@@ -99,8 +99,6 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         method: "post",
         fun: async (r, res, auth) => {
           const req = r as RequestWithAuth<C>
-          console.log("FINDING")
-          console.log(await getItemCondition(builderInfo.permissions.read, req))
           const items = await builderInfo.collection(req.db).findMany({
             condition: {
               And: [
@@ -109,6 +107,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
               ],
             },
             limit: req.body.limit,
+            skip: req.body.skip,
           })
 
           if (builderInfo.actions?.prepareResponse) {

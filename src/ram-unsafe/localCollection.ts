@@ -27,9 +27,12 @@ export class LocalCollection<T extends HasId> implements DbMethods<T> {
   findMany = async (query: Query<T>) => {
     const condition = query.condition ?? {Always: true}
     
+    const skip = query.skip ?? 0
+    const limit = query.limit ?? 100
+
     return this.items.filter((x) => {
       return evalCondition(x, condition)
-    })
+    }).slice(skip, limit)
   }
 
   insertOne = async (item: T) => {
