@@ -1,4 +1,5 @@
-import {Condition, evalCondition, Query} from "../condition"
+import {Query} from "server/query"
+import {Condition, evalCondition} from "../condition"
 import {DbMethods, HasId} from "../server"
 import {NotFoundError} from "../server/errorHandling"
 
@@ -26,13 +27,15 @@ export class LocalCollection<T extends HasId> implements DbMethods<T> {
 
   findMany = async (query: Query<T>) => {
     const condition = query.condition ?? {Always: true}
-    
+
     const skip = query.skip ?? 0
     const limit = query.limit ?? 100
 
-    return this.items.filter((x) => {
-      return evalCondition(x, condition)
-    }).slice(skip, limit)
+    return this.items
+      .filter((x) => {
+        return evalCondition(x, condition)
+      })
+      .slice(skip, limit)
   }
 
   insertOne = async (item: T) => {

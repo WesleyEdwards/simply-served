@@ -4,7 +4,7 @@ import {Condition} from "../condition/condition"
 import {AuthPath, buildRouteRaw, Path} from "./buildRoute"
 import {createQuerySchema} from "../condition/conditionSchema"
 import {ZodObject} from "zod"
-import {InvalidRequestError, partialValidator} from "../server"
+import {partialValidator} from "../server"
 import {evalCondition} from "../condition"
 import {RequestWithAuth, ServerContext} from "../types"
 
@@ -124,6 +124,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
     }),
 
     insert: buildRouteRaw({
+      validator: builderInfo.validator,
       route: {
         authPath: getAuthOptions(builderInfo.permissions.create, {
           type: "route",
@@ -134,15 +135,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           const req = r as unknown as RequestWithAuth<C>
           const {body} = req
 
-          const validBody = builderInfo.validator.safeParse(body)
-
-          if (validBody.error) {
-            throw new InvalidRequestError(JSON.stringify(validBody.error))
-          }
-          const parsed = validBody.data as T
-
           const canCreate = evalCondition(
-            parsed,
+            body,
             await getItemCondition(builderInfo.permissions.create, req)
           )
 
@@ -151,8 +145,8 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           }
 
           const processed = builderInfo.actions?.interceptCreate
-            ? await builderInfo.actions.interceptCreate(parsed, req)
-            : parsed
+            ? await builderInfo.actions.interceptCreate(body, req)
+            : body
 
           try {
             const created = await builderInfo
@@ -215,7 +209,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           type: "id",
           route: "/:id",
         }),
-        fun: async (r, res, auth) => {
+        fun: async (r, res) => {
           const req = r as RequestWithAuth<C>
 
           if (!req.params.id) {

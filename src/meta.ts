@@ -5,6 +5,7 @@ export type MetaInfo =
   | {
       type: "endpoint"
       name: string
+      group: string
       args: Record<string, string>
       body?: z.ZodSchema<any, any, any>
       method: string

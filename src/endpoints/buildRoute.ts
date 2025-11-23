@@ -191,6 +191,15 @@ function createBuilder<
     authPath: params.authPath,
     method: params.method,
     fun: builder,
+    _meta: {
+      type: "endpoint",
+      name: "unknown", // This will be populated later
+      group: "unknown", // This will be populated later
+      args: {}, // This will be populated later
+      body: undefined,
+      method: params.method,
+      returnType: "Promise<any>",
+    },
   })
 }
 
@@ -217,6 +226,15 @@ function withBody<
         }
         return builder(...args) // todo
       },
+      _meta: {
+        type: "endpoint",
+        name: "unknown", // This will be populated later
+        group: "unknown", // This will be populated later
+        args: {}, // This will be populated later
+        body: optionsParams.validator as any,
+        method: params.method,
+        returnType: "Promise<any>",
+      },
     }),
   })
 }
@@ -237,5 +255,16 @@ export function buildRouteRaw<
       authOptions: authPath,
     })({validator}).build(fun)
   }
-  return route
+  return {
+    ...route,
+    _meta: {
+      type: "endpoint",
+      name: "unknown", // This will be populated later
+      group: "unknown", // This will be populated later
+      args: {}, // This will be populated later
+      body: undefined,
+      method: route.method,
+      returnType: "Promise<any>",
+    },
+  }
 }
