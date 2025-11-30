@@ -224,13 +224,14 @@ function withBody<
             throw new ParseError(`Invalid request body: ${e.message}`)
           }
         }
-        return builder(...args) // todo
+        return builder(...args)
       },
       _meta: {
+        // unknown fields and args will be populated later
         type: "endpoint",
-        name: "unknown", // This will be populated later
-        group: "unknown", // This will be populated later
-        args: {}, // This will be populated later
+        name: "unknown",
+        group: "unknown",
+        args: {},
         body: optionsParams.validator as any,
         method: params.method,
         returnType: "Promise<any>",
@@ -258,10 +259,11 @@ export function buildRouteRaw<
   return {
     ...route,
     _meta: {
+      // unknown fields and args will be populated later
       type: "endpoint",
-      name: "unknown", // This will be populated later
-      group: "unknown", // This will be populated later
-      args: {}, // This will be populated later
+      name: "unknown",
+      group: "unknown",
+      args: {},
       body: undefined,
       method: route.method,
       returnType: "Promise<any>",

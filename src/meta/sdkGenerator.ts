@@ -10,7 +10,7 @@ export function generateSdk(meta: MetaInfo[]): string {
   const groups: Record<string, string[]> = {}
   const liveApiGroups: Record<string, string[]> = {}
 
-  // Helper to ensure unique type names
+  // unique type names
   const typeNames = new Set<string>()
   const getUniqueTypeName = (base: string) => {
     let name = base
@@ -22,10 +22,8 @@ export function generateSdk(meta: MetaInfo[]): string {
     return name
   }
 
-  // 1. Identify Models per Group
   const groupModels: Record<string, string> = {} // group -> ModelName
 
-  // Group endpoints by group
   const endpointsByGroup: Record<string, typeof endpoints> = {}
   endpoints.forEach((e) => {
     if (!endpointsByGroup[e.group]) endpointsByGroup[e.group] = []
@@ -248,7 +246,7 @@ function camelCase(s: string) {
   return `${u[0].toLowerCase()}${u.slice(1)}`
 }
 
-const isQuery = <T>(x: any): x is Query<any> => {
+const isQuery = <T>(x: any): x is Query<T> => {
   if (typeof x !== "object" || x === null) {
     return false
   }
