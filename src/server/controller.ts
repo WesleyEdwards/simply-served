@@ -52,7 +52,7 @@ export function addController<C extends ServerContext>(
 
     // Collect Metadata
     if (route._meta) {
-      console.log("META: ", route.authPath)
+      // console.log("META: ", route.authPath)
       const meta = route._meta
       if (meta.type === "endpoint") {
         meta.name = path.route
@@ -75,7 +75,7 @@ export function addController<C extends ServerContext>(
         a._meta.push(meta)
       }
     } else {
-      console.log("NO META: ", route.authPath)
+      // console.log("NO META: ", route.authPath)
     }
 
     router.use(path.route, async (req, _, next): Promise<any> => {

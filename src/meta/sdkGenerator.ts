@@ -124,7 +124,7 @@ export function generateSdk(meta: MetaInfo[]): string {
     // Add to LiveApi
     if (!liveApiGroups[group]) liveApiGroups[group] = []
 
-    const pathTemplate = name.replace(/:(\w+)/g, "${$1}")
+    const pathTemplate = `/${group}${name.replace(/:(\w+)/g, "${$1}")}`
     const fetcherArgs = [`\`${pathTemplate}\``, `"${method.toUpperCase()}"`]
     if (body) fetcherArgs.push("body")
 
@@ -150,7 +150,7 @@ export class LiveApi implements Api {
   constructor(private fetcher: Fetcher) {}
 ${Object.keys(liveApiGroups)
   .map(
-    (g) => `  ${g} = {
+    (g) => `  ${g}: Api["${g}"] = {
 ${liveApiGroups[g].map((f) => `    ${f}`).join(",\n")}
   }`
   )
@@ -160,7 +160,7 @@ ${liveApiGroups[g].map((f) => `    ${f}`).join(",\n")}
 
   return `
 // Auto-generated SDK
-import {Query, Fetcher, Method, Modification} from "simply-served";
+import {Query, Fetcher, Method, Modification} from "simply-served-client";
 
 ${interfaces.join("\n")}
 
@@ -171,7 +171,7 @@ ${liveApiClass}
 `
 }
 
-function zodToTs(schema: ZodType<any, any, any>, name?: string): string {
+export function zodToTs(schema: ZodType<any, any, any>, name?: string): string {
   const def = schema.def
   const typeName =
     def?.typeName || (def?.type ? `Zod${capitalize(def.type)}` : "ZodAny")
@@ -186,7 +186,7 @@ function zodToTs(schema: ZodType<any, any, any>, name?: string): string {
   if (typeName === "ZodUnknown") return "unknown"
   if (typeName === "ZodVoid") return "void"
   if (typeName === "ZodArray") {
-    return `${zodToTs(def.type)}[]`
+    return `${zodToTs(def.type?._def ? def.type : def.element)}[]`
   }
   if (typeName === "ZodObject") {
     const shape = def.shape
@@ -202,7 +202,7 @@ function zodToTs(schema: ZodType<any, any, any>, name?: string): string {
 
     const props = keys
       .map((key) => {
-        const isOptional = shape[key].isOptional()
+        const isOptional = isSdkOptional(shape[key])
         return `${key}${isOptional ? "?" : ""}: ${zodToTs(shape[key])}`
       })
       .join(";\n\t")
@@ -222,11 +222,15 @@ function zodToTs(schema: ZodType<any, any, any>, name?: string): string {
     return `${zodToTs(def.left)} & ${zodToTs(def.right)}`
   }
   if (typeName === "ZodEnum") {
-    return def.values.map((v: string) => `"${v}"`).join(" | ")
+    const values = def.values || Object.keys(def.entries)
+    return values.map((v: string) => `"${v}"`).join(" | ")
   }
   if (typeName === "ZodLiteral") {
-    const val = def.value
+    const val = def.value !== undefined ? def.value : (def.values && def.values[0])
     return typeof val === "string" ? `"${val}"` : String(val)
+  }
+  if (typeName === "ZodDefault") {
+    return zodToTs(def.innerType)
   }
 
   return "any"
@@ -249,5 +253,16 @@ const isQuery = <T>(x: any): x is Query<any> => {
     return false
   }
   return "limit" in x && "condition" in x
+}
+
+function isSdkOptional(schema: ZodType<any, any, any>): boolean {
+  const def = schema._def as any
+  const typeName = def?.typeName || (def?.type ? `Zod${capitalize(def.type)}` : "ZodAny")
+  
+  if (typeName === "ZodOptional") return true
+  if (typeName === "ZodDefault") return isSdkOptional(def.innerType)
+  if (typeName === "ZodNullable") return isSdkOptional(def.innerType)
+  
+  return false
 }
 
