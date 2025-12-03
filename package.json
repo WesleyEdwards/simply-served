@@ -10,11 +10,25 @@
     "prepack": "tsc"
   },
   "dependencies": {
-    "express": "^5.0.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.14.2",
     "uuid": "^9.0.1",
     "zod": "4.0.5"
+  },
+  "peerDependencies": {
+    "express": "^5.0.0",
+    "node-mailjet": "^6.0.9",
+    "mongodb": "^6.14.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "peerDependenciesMeta": {
+    "node-mailjet": {
+      "optional": true
+    },
+    "mongodb": {
+      "optional": true
+    },
+    "jsonwebtoken": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

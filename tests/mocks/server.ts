@@ -48,7 +48,7 @@ export const getMockServer = () => {
           modify: {type: "publicAccess"},
           delete: {
             type: "modelAuth",
-            check: (auth) => ({owner: {Equal: auth.userId}}),
+            check: async ({auth}) => ({owner: {Equal: auth.userId}}),
           },
         },
       }),
@@ -80,7 +80,7 @@ export const getMockServer = () => {
         modify: {type: "publicAccess"},
         delete: {
           type: "modelAuth",
-          check: (auth) => ({owner: {Equal: auth.userId}}),
+          check: async ({auth}) => ({owner: {Equal: auth.userId}}),
         },
       },
     }),

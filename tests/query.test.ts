@@ -1,4 +1,4 @@
-import { Query } from "../src/condition/conditionSchema"
+import { Query } from "../src/server/query"
 import { createQuerySchema } from "../src/condition/conditionSchema"
 import { z } from "zod"
 

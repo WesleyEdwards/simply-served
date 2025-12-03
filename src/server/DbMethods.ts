@@ -1,4 +1,5 @@
-import {Condition, Query} from "../condition"
+import {Condition} from "../condition"
+import {Query} from "./query"
 
 export type HasId = {
   _id: string

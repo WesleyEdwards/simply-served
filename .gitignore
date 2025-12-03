@@ -6,3 +6,4 @@ web_modules/
 
 build/
 db-store/
+*.tgz

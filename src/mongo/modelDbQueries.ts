@@ -7,8 +7,9 @@ import {
 } from "mongodb"
 import {HasId, DbMethods} from "../server/DbMethods"
 import {conditionToFilter} from "./conditionToFilter"
-import {Condition, Query} from "../condition"
+import {Condition} from "../condition"
 import {InternalServerError, NotFoundError} from "../server"
+import { Query } from "server/query"
 // const { inspect } = require('node:util');
 
 /**

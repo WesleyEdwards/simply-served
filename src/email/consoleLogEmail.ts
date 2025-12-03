@@ -7,6 +7,7 @@ export const consoleLogEmail = (): EmailClient => {
         console.info(
           `
           ------------------------------
+
           Sending email to ${params.to}
           ${params.subject}
           ${params.html}

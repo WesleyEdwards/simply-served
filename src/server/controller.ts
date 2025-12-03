@@ -50,6 +50,31 @@ export function addController<C extends ServerContext>(
     const {authPath: authOptions, method, fun} = route
     const path = authOptions.path
 
+    // Collect Metadata
+    if (route._meta) {
+      const meta = route._meta
+      if (meta.type === "endpoint") {
+        meta.name = path.route
+        meta.group = basePath.replace(/^\//, "")
+        // Extract args from path
+        const args: Record<string, string> = {}
+        if (path.type === "id") {
+          const nameOfId = path.route.split(":").at(1)
+          if (nameOfId) {
+            args[nameOfId] = "string"
+          }
+        }
+        meta.args = args
+
+        // Add to app metadata
+        const a = app as Express & {_meta?: MetaInfo[]}
+        if (!a._meta) {
+          a._meta = []
+        }
+        a._meta.push(meta)
+      }
+    }
+
     router.use(path.route, async (req, _, next): Promise<any> => {
       const sameMethod = req.method.toLowerCase() === method
       if (!sameMethod) {

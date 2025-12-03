@@ -1,0 +1,1 @@
+export type Modification<T> = Partial<T>
