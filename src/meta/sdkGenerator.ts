@@ -54,7 +54,7 @@ export function generateSdk(meta: MetaInfo[]): string {
     const {name, method, body, args, group} = endpoint
 
     // Determine function name
-    const relativePath = name.replace(new RegExp(`^/${group}`), "") || "/"
+    const relativePath = cleanName(name.replace(new RegExp(`^/${group}`), "")) || "/"
     let funcName = ""
     if (method === "get") {
       if (relativePath === "/" || relativePath === "") funcName = "query"
@@ -84,7 +84,7 @@ export function generateSdk(meta: MetaInfo[]): string {
         bodyType = modelName
       } else {
         // Fallback to generated type
-        const baseTypeName = capitalize(funcName) + capitalize(group) + "Body"
+        const baseTypeName = capitalize(funcName) + capitalize(cleanName(group)) + "Body"
         const typeName = getUniqueTypeName(baseTypeName)
         const tsType = zodToTs(body, typeName)
         interfaces.push(`export type ${typeName} = ${tsType}`)
@@ -135,7 +135,7 @@ export function generateSdk(meta: MetaInfo[]): string {
 export interface Api {
 ${Object.keys(groups)
   .map(
-    (g) => `  readonly ${g}: {
+    (g) => `  readonly ${cleanName(g)}: {
 ${groups[g].map((f) => `    ${f}`).join("\n")}
   }`
   )
@@ -148,7 +148,7 @@ export class LiveApi implements Api {
   constructor(private fetcher: Fetcher) {}
 ${Object.keys(liveApiGroups)
   .map(
-    (g) => `  ${g}: Api["${g}"] = {
+    (g) => `  ${cleanName(g)}: Api["${cleanName(g)}"] = {
 ${liveApiGroups[g].map((f) => `    ${f}`).join(",\n")}
   }`
   )
@@ -167,6 +167,10 @@ ${apiInterface}
 
 ${liveApiClass}
 `
+}
+
+function cleanName(s: string) {
+  return s.replace("-", "").replace("/","")
 }
 
 export function zodToTs(schema: ZodType<any, any, any>, name?: string): string {
