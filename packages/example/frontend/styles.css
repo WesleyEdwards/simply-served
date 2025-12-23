@@ -1,0 +1,138 @@
+/* Reset some defaults */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background: #f4f6f8;
+  color: #333;
+  padding: 2rem;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #222;
+}
+
+h2 {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.25rem;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 0.25rem;
+}
+
+label {
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+input[type="text"] {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+input[type="text"]:focus {
+  border-color: #0077ff;
+}
+
+button {
+  background: #0077ff;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  margin-left: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #005fcc;
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.todo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  transition: background 0.2s;
+}
+
+.todo-item:hover {
+  background: #f0f4ff;
+}
+
+.todo-item span {
+  flex-grow: 1;
+  font-size: 1rem;
+}
+
+.todo-item.completed span {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.todo-item button {
+  background: #e0e0e0;
+  color: #333;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.todo-item button:hover {
+  background: #ccc;
+}
+
+.todo-item button:first-of-type {
+  background: #28a745;
+  color: white;
+}
+
+.todo-item button:first-of-type:hover {
+  background: #218838;
+}
+
+.todo-item button:last-of-type {
+  background: #dc3545;
+  color: white;
+}
+
+.todo-item button:last-of-type:hover {
+  background: #c82333;
+}
+
+#addTodoForm {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+#newTodoItem {
+  flex: 1;
+}

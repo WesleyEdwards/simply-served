@@ -4,7 +4,8 @@ web_modules/
 .npm
 .eslintcache
 
-build/
-dist/
-db-store/
-*.tgz
+src/
+tests/
+example/
+
+tsconfig.json

@@ -5,6 +5,8 @@ web_modules/
 .eslintcache
 
 build/
-dist/
 db-store/
-*.tgz
+
+*.sh
+
+.terraform

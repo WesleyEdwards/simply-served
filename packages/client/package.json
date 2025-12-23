@@ -1,0 +1,33 @@
+{
+  "name": "simply-served-client",
+  "version": "1.0.2",
+  "description": "Client module for simply-served",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "prepack": "tsc"
+  },
+  "dependencies": {},
+  "peerDependencies": {},
+  "peerDependenciesMeta": {},
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/uuid": "^9.0.4",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.0",
+    "typescript": "5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WesleyEdwards/simply-served-client.git"
+  },
+  "keywords": [],
+  "author": "Wesley Edwards",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/WesleyEdwards/simply-served-client/issues"
+  },
+  "homepage": "https://github.com/WesleyEdwards/simply-served-client#readme"
+}
