@@ -96,9 +96,18 @@ addSdkRoute(app)
 export { app };
 
 if (require.main === module) {
-  app.listen(8080, () => {
+  const server = app.listen(8080, () => {
     console.info("Listening on port 8080\n");
     console.info(`Check out todo.html to interact with the server at:`);
     console.info(__dirname.split("src").at(0) + "frontend/todo.html");
+  });
+
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.error("Port 8080 is already in use by another process.");
+    } else {
+      console.error("Server error:", err.message);
+    }
+    process.exit(1);
   });
 }
