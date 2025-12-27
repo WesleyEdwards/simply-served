@@ -35,7 +35,7 @@ export class LocalCollection<T extends HasId> implements DbMethods<T> {
       .filter((x) => {
         return evalCondition(x, condition)
       })
-      .slice(skip, limit)
+      .slice(skip, skip + limit)
   }
 
   insertOne = async (item: T) => {

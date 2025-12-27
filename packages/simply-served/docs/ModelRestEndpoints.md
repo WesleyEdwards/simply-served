@@ -62,7 +62,7 @@ type ModelPermOption<C extends ServerContext, T> =
   | {type: "publicAccess"}
   | {type: "notAllowed"}
   | {type: "authenticated"}
-  | {type: "modelAuth"; check: (auth: C["auth"]) => Condition<T>}
+  | {type: "modelAuth"; check: (ctx: C) => Promise<Condition<T>>}
 ```
 
 A description of each type in the Union type `ModelPermOption` is as follows:
@@ -94,7 +94,7 @@ const permissions: ModelPermissions<Ctx, T> = {
 - Permissions based on the instance of the model being operated on.
 
 - Developers can define whether an authenticated user can perform a certain action on a model based on the relationship between the user and the model its self.
-- The `check` function allows you to provide a function that generates a condition based on a user's authentication.
+- The `check` function allows you to provide an async function that generates a condition based on the full server context (including `auth` and `db`).
 
 For Example, given the following model, this would be a valid permission definition:
 
@@ -108,19 +108,20 @@ type Todo = {
 const permissions: ModelPermissions<Ctx, Todo> = {
   read: {
     type: "modelAuth",
-    check: (auth) => {
-      if (auth.isAdmin) {
+    check: async (ctx) => {
+      if (ctx.auth.isAdmin) {
         return { Always: true }
       } else {
         return { Or: [
-          { owner: { Equal: auth.userId } }
+          { owner: { Equal: ctx.auth.userId } },
           { public: { Equal: true } }
         ] }
       }
     }
   },
   create: {
-    modelAuth: (auth) => ({ owner: { Equal: auth.userId } })
+    type: "modelAuth",
+    check: async (ctx) => ({ owner: { Equal: ctx.auth.userId } })
   },
   ...
 }

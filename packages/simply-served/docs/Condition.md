@@ -128,7 +128,7 @@ The `Condition<T>` object supports the following properties:
   evalCondition([10, 20, 30], condition) // false
   ```
 
-### 8. `ListAnyElement`
+### 8. `StringContains`
 
 - **Description**: Evaluates to `true` if the `item` is a string and contains the 'value'. Analogous to JavaScript's `.includes()` function
 - **Example**:

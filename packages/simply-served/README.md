@@ -31,14 +31,13 @@ Whether you're building a simple application or a complex API, Simply Served pro
 - **Provided MongoDB Adapter**: Use server condition and query system for the Mongo Driver
 
 ## Documentation
-- [Model Rest Endpoints](https://github.com/WesleyEdwards/simply-served/blob/main/docs/ModelRestEndpoints.md)
-- [Condition System](https://github.com/WesleyEdwards/simply-served/blob/main/docs/Condition.md)
+- [Model Rest Endpoints](./docs/ModelRestEndpoints.md)
+- [Condition System](./docs/Condition.md)
 
 
 ## Example
 
-Get started with an example server:  
-[👉 Example Server on GitHub](https://github.com/WesleyEdwards/simply-served-example)
+Get started with an example server in the [example package](../../packages/example).
 
 ```typescript
 type Db = { user: DbMethods<User> };
@@ -68,7 +67,7 @@ addController<ServerCtx>(app, {
       read: { type: "publicAccess" },
       modify: {
         type: "modelAuth",
-        check: ({ _id }) => ({ _id: { Equal: _id } }),
+        check: async ({ auth }) => ({ _id: { Equal: auth._id } }),
       },
       delete: { type: "notAllowed" },
     },
