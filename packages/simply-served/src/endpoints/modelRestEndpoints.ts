@@ -85,7 +85,7 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
               builderInfo.actions?.prepareResponse?.(item, req) ?? item
             )
           } catch {
-            return res.status(404).json({message: "Not Found"})
+            return res.status(404).json({error: `Item with id '${id}' not found`})
           }
         },
       },
@@ -141,7 +141,9 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           )
 
           if (!canCreate) {
-            return res.status(401).json({error: "Cannot create"})
+            return res
+              .status(403)
+              .json({error: "Permission denied: cannot create this item"})
           }
 
           const processed = builderInfo.actions?.interceptCreate
@@ -156,8 +158,11 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
             return res.json(
               builderInfo.actions?.prepareResponse?.(created, req) ?? created
             )
-          } catch {
-            return res.status(500).json({error: "Unable to create item"})
+          } catch (e) {
+            const message = e instanceof Error ? e.message : "Unknown error"
+            return res
+              .status(500)
+              .json({error: `Failed to create item: ${message}`})
           }
         },
       },
@@ -175,28 +180,40 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
           const {body} = req
 
           if (!req.params.id) {
-            return res.status(400).json({error: "Provide a valid id"})
+            return res.status(400).json({error: "Missing required path parameter: id"})
           }
 
-          const item = await builderInfo.collection(req.db).findOne({
-            And: [
-              {_id: {Equal: id}},
-              await getItemCondition(builderInfo.permissions.modify, req),
-            ],
-          })
-          const intercepted =
-            (await builderInfo.actions?.interceptModify?.(item, body, req)) ??
-            body
+          try {
+            const item = await builderInfo.collection(req.db).findOne({
+              And: [
+                {_id: {Equal: id}},
+                await getItemCondition(builderInfo.permissions.modify, req),
+              ],
+            })
+            const intercepted =
+              (await builderInfo.actions?.interceptModify?.(item, body, req)) ??
+              body
 
-          const updated = await builderInfo
-            .collection(req.db)
-            .updateOne(id, intercepted)
+            const updated = await builderInfo
+              .collection(req.db)
+              .updateOne(id, intercepted)
 
-          await builderInfo.actions?.postModify?.(updated, req)
+            await builderInfo.actions?.postModify?.(updated, req)
 
-          return res.json(
-            builderInfo.actions?.prepareResponse?.(updated, req) ?? updated
-          )
+            return res.json(
+              builderInfo.actions?.prepareResponse?.(updated, req) ?? updated
+            )
+          } catch (e) {
+            if (e instanceof Error && e.message.includes("not found")) {
+              return res
+                .status(404)
+                .json({error: `Item with id '${id}' not found or access denied`})
+            }
+            const message = e instanceof Error ? e.message : "Unknown error"
+            return res
+              .status(500)
+              .json({error: `Failed to modify item: ${message}`})
+          }
         },
       },
       validator: partialValidator(builderInfo.validator),
@@ -211,24 +228,36 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         }),
         fun: async (r, res) => {
           const req = r as RequestWithAuth<C>
+          const id = req.params.id
 
-          if (!req.params.id) {
-            return res.status(400).json({error: "Provide a valid id"})
+          if (!id) {
+            return res.status(400).json({error: "Missing required path parameter: id"})
           }
-          const item = await builderInfo.collection(req.db).findOne({
-            And: [
-              {_id: {Equal: req.params.id}},
-              await getItemCondition(builderInfo.permissions.delete, req),
-            ],
-          })
-          await builderInfo.actions?.interceptDelete?.(item, req)
 
-          const deleted = await builderInfo
-            .collection(req.db)
-            .deleteOne(req.params.id)
+          try {
+            const item = await builderInfo.collection(req.db).findOne({
+              And: [
+                {_id: {Equal: id}},
+                await getItemCondition(builderInfo.permissions.delete, req),
+              ],
+            })
+            await builderInfo.actions?.interceptDelete?.(item, req)
 
-          await builderInfo.actions?.postDelete?.(deleted, req)
-          return res.json(deleted._id)
+            const deleted = await builderInfo.collection(req.db).deleteOne(id)
+
+            await builderInfo.actions?.postDelete?.(deleted, req)
+            return res.json(deleted._id)
+          } catch (e) {
+            if (e instanceof Error && e.message.includes("not found")) {
+              return res
+                .status(404)
+                .json({error: `Item with id '${id}' not found or access denied`})
+            }
+            const message = e instanceof Error ? e.message : "Unknown error"
+            return res
+              .status(500)
+              .json({error: `Failed to delete item: ${message}`})
+          }
         },
       },
     }),

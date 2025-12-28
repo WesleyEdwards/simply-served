@@ -63,8 +63,34 @@ describe("Test conditionToFilter", () => {
     })
   })
 
-  test("StringContains condition", () => {
-    // TODO
+  test("StringContains condition - case sensitive", () => {
+    const result = conditionToFilter({
+      StringContains: {value: "hello", ignoreCase: false},
+    })
+    expect(result).toMatchObject({$regex: "hello"})
+    expect(result).not.toHaveProperty("$options")
+  })
+
+  test("StringContains condition - case insensitive", () => {
+    const result = conditionToFilter({
+      StringContains: {value: "hello", ignoreCase: true},
+    })
+    expect(result).toMatchObject({$regex: "hello", $options: "i"})
+  })
+
+  test("StringContains escapes special regex characters", () => {
+    const result = conditionToFilter({
+      StringContains: {value: "test.*value", ignoreCase: false},
+    })
+    // Special chars should be escaped
+    expect(result).toMatchObject({$regex: "test\\.\\*value"})
+  })
+
+  test("StringContains escapes all special characters", () => {
+    const result = conditionToFilter({
+      StringContains: {value: "a]b[c(d)e{f}g^h$i.j*k+l?m|n\\o", ignoreCase: false},
+    })
+    expect(result.$regex).toBe("a\\]b\\[c\\(d\\)e\\{f\\}g\\^h\\$i\\.j\\*k\\+l\\?m\\|n\\\\o")
   })
 
   test("Nested object conditions", () => {

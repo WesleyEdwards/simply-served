@@ -36,3 +36,11 @@ export class UnauthorizedError extends Error {
     this.status = status
   }
 }
+
+export class ForbiddenError extends Error {
+  status: number
+  constructor(message = "Forbidden") {
+    super(message)
+    this.status = 403
+  }
+}

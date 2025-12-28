@@ -1,5 +1,4 @@
 import {ServerContext, WithoutAuth} from "../types"
-import {UnauthorizedError} from "../server"
 import jwt from "jsonwebtoken"
 import express from "express"
 
@@ -34,10 +33,6 @@ export const bearerTokenMiddleware =
         | ServerContext["auth"]
         | null
       ;(req as any).auth = auth
-
-      if (!auth) {
-        throw new UnauthorizedError()
-      }
     }
 
     next()

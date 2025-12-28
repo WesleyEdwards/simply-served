@@ -1,6 +1,10 @@
 import {Filter} from "mongodb"
 import {Condition} from "../condition/condition"
 
+/** Escapes special regex characters to prevent regex injection */
+const escapeRegex = (str: string): string =>
+  str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
 export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
   if ("Equal" in condition) {
     return {$eq: condition.Equal} as Filter<T>
@@ -55,11 +59,11 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
   }
 
   if ("StringContains" in condition) {
+    // Escape special regex characters to prevent injection
+    const escapedValue = escapeRegex(condition.StringContains.value)
     return {
-      $regex: new RegExp(
-        condition.StringContains.value,
-        condition.StringContains.ignoreCase ? "i" : "g"
-      ),
+      $regex: escapedValue,
+      ...(condition.StringContains.ignoreCase && {$options: "i"}),
     } as Filter<T>
   }
 

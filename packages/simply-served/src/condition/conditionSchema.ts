@@ -1,11 +1,46 @@
 import {z, ZodType} from "zod"
 
-export const createQuerySchema = <T>(schema: z.ZodType<T, any, any>) =>
-  z.object({
-    limit: z.number().optional(),
-    skip: z.number().optional(),
-    condition: createConditionSchema(schema),
+/** Default maximum limit for queries to prevent DoS attacks */
+export const MAX_LIMIT = 10000
+export const DEFAULT_LIMIT = 100
+
+export const createQuerySchema = <T>(
+  schema: z.ZodType<T, any, any>,
+  options?: {maxLimit?: number}
+) => {
+  const maxLimit = options?.maxLimit ?? MAX_LIMIT
+
+  // Extract valid field names from schema for sort validation
+  const validFields =
+    schema instanceof z.ZodObject ? Object.keys(schema.shape) : []
+
+  const sortSchema = z
+    .array(
+      z.object({
+        field: validFields.length > 0
+          ? z.enum(validFields as [string, ...string[]])
+          : z.string(),
+        order: z.enum(["asc", "desc"]),
+      })
+    )
+    .optional()
+
+  return z.object({
+    limit: z
+      .number()
+      .int("Limit must be an integer")
+      .min(1, "Limit must be at least 1")
+      .max(maxLimit, `Limit cannot exceed ${maxLimit}`)
+      .optional(),
+    skip: z
+      .number()
+      .int("Skip must be an integer")
+      .min(0, "Skip cannot be negative")
+      .optional(),
+    condition: createConditionSchema(schema).optional(),
+    sort: sortSchema,
   })
+}
 
 export function createConditionSchema<T extends ZodType>(
   base: T

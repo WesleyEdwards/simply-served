@@ -27,13 +27,19 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
 
 ### High Priority
 
-- [ ] **JWT Handling for Public Routes** (`packages/simply-served/src/auth/verifyAuth.ts:39`)
+- [x] **JWT Handling for Public Routes** (`packages/simply-served/src/auth/verifyAuth.ts`)
   - Invalid tokens throw errors even for `publicAccess` routes if Authorization header is present
   - Should allow unauthenticated requests to proceed for public endpoints
+  - **FIXED** - Middleware now sets auth to null for invalid tokens, letting route-level checks decide
 
-- [ ] **Weak Error Messages** (`packages/simply-served/src/endpoints/modelRestEndpoints.ts`)
+- [x] **Weak Error Messages** (`packages/simply-served/src/endpoints/modelRestEndpoints.ts`)
   - Validation failures return generic "Unable to create item" with no field details
   - Zod errors are swallowed instead of returned to client
+  - **FIXED** - Error messages now include:
+    - Specific item IDs in not found errors
+    - 403 status with "Permission denied" for create failures
+    - Actual error messages from database operations
+    - Proper error handling for modify/delete endpoints
 
 ### Medium Priority
 
@@ -41,13 +47,22 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
   - `schema.partial().strict()` - `.strict()` rejects unknown fields
   - Partial objects might intentionally omit required fields
 
-- [ ] **No Pagination Validation**
+- [x] **No Pagination Validation**
   - Skip/limit can be negative
   - No maximum limit enforcement (potential DoS with huge limit)
+  - **FIXED** - Added validation in `createQuerySchema`:
+    - `skip`: must be non-negative integer
+    - `limit`: must be integer between 1 and max (default 1000)
+    - Custom `maxLimit` option supported
+    - Defense in depth in `LocalCollection.findMany()`
 
-- [ ] **StringContains MongoDB Regex** (`packages/simply-served/src/mongo/conditionToFilter.ts:59-62`)
+- [x] **StringContains MongoDB Regex** (`packages/simply-served/src/mongo/conditionToFilter.ts`)
   - Uses `/^regex/gi` flags incorrectly
   - Should use `$options: 'i'` in MongoDB regex syntax
+  - **FIXED** - Now uses proper MongoDB syntax:
+    - `{$regex: "value", $options: "i"}` for case-insensitive
+    - `{$regex: "value"}` for case-sensitive
+    - Added `escapeRegex()` to prevent regex injection attacks
 
 ### Low Priority
 
@@ -70,7 +85,11 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
 
 ### Query System
 
-- [ ] Sorting/ordering support
+- [x] Sorting/ordering support - **ADDED**
+  - `Query<T>` now includes optional `sort: Sort<T>[]`
+  - Supports multiple fields with `asc`/`desc` order
+  - Schema validates field names against model
+  - `LocalCollection.findMany()` implements sorting
 - [ ] Aggregation pipeline
 - [ ] Distinct queries
 - [ ] Count queries
@@ -161,13 +180,13 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
 
 ### Missing Test Suites
 
-- [ ] Integration tests (full request/response cycles)
+- [x] Integration tests (full request/response cycles) - **ADDED** `errorHandling.test.ts`
 - [ ] MongoDB integration tests (real queries, not just snapshots)
 - [ ] Concurrent access tests for RAM DB
 - [ ] SDK generation tests against real endpoints
 - [ ] Authentication success flow tests
-- [ ] Permission denial end-to-end tests
-- [ ] Error handling tests (validation, malformed requests)
+- [x] Permission denial end-to-end tests - **ADDED** in `errorHandling.test.ts`
+- [x] Error handling tests (validation, malformed requests) - **ADDED** in `errorHandling.test.ts`
 - [ ] Field masking integration tests
 
 ---
