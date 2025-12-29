@@ -65,7 +65,10 @@ const createTestServer = (items: Item[] = []) => {
       collection: (db) => db.item,
       validator: itemSchema,
       permissions: {
-        read: {type: "publicAccess"},
+        read: {
+          type: "modelAuth",
+          check: async ({auth}) => ({owner: {Equal: auth.userId}}),
+        },
         create: {
           type: "modelAuth",
           check: async ({auth}) => ({owner: {Equal: auth.userId}}),
@@ -289,4 +292,5 @@ describe("Error Handling", () => {
       expect(res.status).toBe(400)
     })
   })
+
 })

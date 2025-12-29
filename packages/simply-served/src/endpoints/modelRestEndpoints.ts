@@ -2,7 +2,7 @@ import {Route} from "../server/controller"
 import {DbMethods, HasId} from "../server/DbMethods"
 import {Condition} from "../condition/condition"
 import {AuthPath, buildRouteRaw, Path} from "./buildRoute"
-import {createQuerySchema} from "../condition/conditionSchema"
+import {createCountSchema, createQuerySchema} from "../condition/conditionSchema"
 import {ZodObject} from "zod"
 import {partialValidator} from "../server"
 import {evalCondition} from "../condition"
@@ -62,7 +62,7 @@ export type ModelActions<S extends ServerContext, T> = {
  */
 export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
   builderInfo: BuilderParams<C, T>
-): Record<"detail" | "query" | "insert" | "modify" | "delete", Route<C>> {
+): Record<"detail" | "query" | "count" | "insert" | "modify" | "delete", Route<C>> {
   return {
     detail: buildRouteRaw({
       route: {
@@ -121,6 +121,27 @@ export function modelRestEndpoints<C extends ServerContext, T extends HasId>(
         },
       },
       validator: createQuerySchema(builderInfo.validator),
+    }),
+
+    count: buildRouteRaw({
+      route: {
+        authPath: getAuthOptions(builderInfo.permissions.read, {
+          type: "route",
+          route: `/count`,
+        }),
+        method: "post",
+        fun: async (r, res) => {
+          const req = r as RequestWithAuth<C>
+          const count = await builderInfo.collection(req.db).count({
+            And: [
+              req.body.condition ?? {Always: true},
+              await getItemCondition(builderInfo.permissions.read, req),
+            ],
+          })
+          return res.json({count})
+        },
+      },
+      validator: createCountSchema(builderInfo.validator),
     }),
 
     insert: buildRouteRaw({

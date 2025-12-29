@@ -60,6 +60,11 @@ export class LocalCollection<T extends HasId> implements DbMethods<T> {
     return results.slice(skip, skip + limit)
   }
 
+  count = async (filter?: Condition<T>) => {
+    const condition = filter ?? {Always: true}
+    return this.items.filter((x) => evalCondition(x, condition)).length
+  }
+
   insertOne = async (item: T) => {
     this.items.push(item)
     this.persist()

@@ -4,6 +4,12 @@ import {z, ZodType} from "zod"
 export const MAX_LIMIT = 10000
 export const DEFAULT_LIMIT = 100
 
+export const createCountSchema = <T>(schema: z.ZodType<T, any, any>) => {
+  return z.object({
+    condition: createConditionSchema(schema).optional(),
+  })
+}
+
 export const createQuerySchema = <T>(
   schema: z.ZodType<T, any, any>,
   options?: {maxLimit?: number}

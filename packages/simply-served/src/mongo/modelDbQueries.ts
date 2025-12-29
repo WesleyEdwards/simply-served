@@ -58,6 +58,10 @@ export function mongoQueries<T extends HasId>(
         throw new InternalServerError(errorMessage)
       }
     },
+    count: async (filter?: Condition<T>): Promise<number> => {
+      const mongoFilter = filter ? conditionToFilter(filter) : {}
+      return collection.countDocuments(mongoFilter)
+    },
     insertOne: async (newItem: T): Promise<T> => {
       const {acknowledged} = await collection.insertOne(
         newItem as OptionalUnlessRequiredId<T>

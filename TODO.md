@@ -90,9 +90,14 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
   - Supports multiple fields with `asc`/`desc` order
   - Schema validates field names against model
   - `LocalCollection.findMany()` implements sorting
+- [x] Count queries - **ADDED**
+  - `count()` method added to `DbMethods<T>` interface
+  - Implemented in `LocalCollection` and MongoDB adapter
+  - `POST /count` endpoint added to `modelRestEndpoints`
+  - Respects read permissions (only counts items user can access)
+  - Tests added in `query.test.ts` and `errorHandling.test.ts`
 - [ ] Aggregation pipeline
 - [ ] Distinct queries
-- [ ] Count queries
 
 ### Permission System
 
