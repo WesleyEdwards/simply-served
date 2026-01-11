@@ -26,9 +26,6 @@
     },
     "mongodb": {
       "optional": true
-    },
-    "jsonwebtoken": {
-      "optional": true
     }
   },
   "devDependencies": {

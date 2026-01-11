@@ -80,6 +80,8 @@ export function generateSdk(meta: MetaInfo[]): string {
         bodyType = `Query<${modelName}>`
       } else if (funcName === "modify" && modelName) {
         bodyType = `Modification<${modelName}>`
+      } else if (funcName === "count" && modelName) {
+        bodyType = `{condition: Condition<${modelName}>}`
       } else if (funcName === "insert" && modelName) {
         bodyType = modelName
       } else {
@@ -107,11 +109,14 @@ export function generateSdk(meta: MetaInfo[]): string {
         funcName === "detail" ||
         funcName === "create" ||
         funcName === "modify" ||
+        funcName === "insert" ||
         funcName === "delete"
       ) {
         returnType = `Promise<${modelName}>`
       } else if (funcName === "query") {
         returnType = `Promise<${modelName}[]>`
+      } else if (funcName === "count") {
+        returnType = `Promise<number>`
       }
     }
 
@@ -145,7 +150,10 @@ ${groups[g].map((f) => `    ${f}`).join("\n")}
 
   const liveApiClass = `
 export class LiveApi implements Api {
-  constructor(private fetcher: Fetcher) {}
+  private fetcher: Fetcher;
+  constructor(fetcher: Fetcher) {
+    this.fetcher = fetcher;
+  }
 ${Object.keys(liveApiGroups)
   .map(
     (g) => `  ${g}: Api["${g}"] = {
@@ -158,7 +166,7 @@ ${liveApiGroups[g].map((f) => `    ${f}`).join(",\n")}
 
   return `
 // Auto-generated SDK
-import {Query, Fetcher, Method, Modification} from "simply-served-client";
+import type {Query, Fetcher, Condition, Modification} from "simply-served-client";
 
 ${interfaces.join("\n")}
 
