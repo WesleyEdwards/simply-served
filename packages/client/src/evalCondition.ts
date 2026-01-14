@@ -13,6 +13,10 @@ export function evalCondition<T>(item: T, condition: Condition<T>): boolean {
     return condition.Equal === item
   }
 
+  if ("NotEqual" in condition) {
+    return !areEqual(item, condition.NotEqual)
+  }
+
   if ("GreaterThan" in condition) {
     return item > condition.GreaterThan
   }
@@ -39,6 +43,9 @@ export function evalCondition<T>(item: T, condition: Condition<T>): boolean {
     return condition.And.every((andCondition) =>
       evalCondition(item, andCondition)
     )
+  }
+  if ("Not" in condition) {
+    return !evalCondition(item, condition.Not)
   }
   if ("ListAnyElement" in condition) {
     if (!Array.isArray(item)) throw new Error("Invalid condition")

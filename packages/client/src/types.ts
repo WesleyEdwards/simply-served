@@ -6,6 +6,7 @@ export type Condition<T> =
   | {Always: true}
   | {Never: true}
   | {Equal: T}
+  | {NotEqual: T}
   | {GreaterThan: T}
   | {GreaterThanOrEqual: T}
   | {LessThan: T}
@@ -13,6 +14,7 @@ export type Condition<T> =
   | {Inside: T[]}
   | {Or: Array<Condition<T>>}
   | {And: Array<Condition<T>>}
+  | {Not: Condition<T>}
   | {ListAnyElement: T extends (infer U)[] ? Condition<U> : never}
   | {
       StringContains: T extends string
