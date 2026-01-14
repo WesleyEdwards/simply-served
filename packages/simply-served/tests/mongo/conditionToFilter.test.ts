@@ -15,6 +15,13 @@ describe("Test conditionToFilter", () => {
     expect(conditionToFilter({Equal: 42})).toMatchObject({$eq: 42})
   })
 
+  test("NotEqual condition", () => {
+    expect(conditionToFilter({NotEqual: "testValue"})).toMatchObject({
+      $ne: "testValue",
+    })
+    expect(conditionToFilter({NotEqual: 42})).toMatchObject({$ne: 42})
+  })
+
   test("GreaterThan and LessThan conditions", () => {
     expect(conditionToFilter({GreaterThan: 10})).toMatchObject({$gt: 10})
     expect(conditionToFilter({GreaterThanOrEqual: 20})).toMatchObject({

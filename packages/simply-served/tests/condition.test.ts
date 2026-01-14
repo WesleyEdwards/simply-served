@@ -55,6 +55,24 @@ describe("Equal Condition", () => {
   })
 })
 
+describe("NotEqual Condition", () => {
+  test("should result in true Or false", () => {
+    testCondition({NotEqual: "test"}, [
+      ["test", false],
+      ["not", true],
+    ])
+    testCondition<any>({NotEqual: 3}, [
+      [3, false],
+      [12, true],
+      ["3", true],
+    ])
+    testCondition({NotEqual: true}, [
+      [true, false],
+      [false, true],
+    ])
+  })
+})
+
 test("Inside Condition", () => {
   testCondition({Inside: ["test", "one"]}, [
     ["test", true],

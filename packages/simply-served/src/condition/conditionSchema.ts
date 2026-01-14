@@ -57,6 +57,7 @@ export function createConditionSchema<T extends ZodType>(
   variants.push(z.object({Never: z.literal(true)}))
 
   variants.push(z.object({Equal: base}))
+  variants.push(z.object({NotEqual: base}))
   variants.push(z.object({GreaterThan: base}))
   variants.push(z.object({GreaterThanOrEqual: base}))
   variants.push(z.object({LessThan: base}))

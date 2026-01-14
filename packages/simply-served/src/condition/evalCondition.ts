@@ -12,6 +12,9 @@ export function evalCondition<T>(item: T, condition: Condition<T>): boolean {
   if ("Equal" in condition) {
     return condition.Equal === item
   }
+  if ("NotEqual" in condition) {
+    return !areEqual(item, condition.NotEqual)
+  }
 
   if ("GreaterThan" in condition) {
     return item > condition.GreaterThan

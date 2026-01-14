@@ -6,6 +6,7 @@ export type Condition<T> =
   | {Always: true}
   | {Never: true}
   | {Equal: T}
+  | {NotEqual: T}
   | {GreaterThan: T}
   | {GreaterThanOrEqual: T}
   | {LessThan: T}

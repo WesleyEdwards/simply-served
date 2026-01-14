@@ -9,6 +9,9 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
   if ("Equal" in condition) {
     return {$eq: condition.Equal} as Filter<T>
   }
+  if ("NotEqual" in condition) {
+    return {$ne: condition.NotEqual} as Filter<T>
+  }
   if ("Inside" in condition) {
     return {$in: condition.Inside} as Filter<T>
   }
@@ -118,6 +121,7 @@ const conditionStrs = [
   "Always",
   "Never",
   "Equal",
+  "NotEqual",
   "GreaterThan",
   "GreaterThanOrEqual",
   "LessThan",
