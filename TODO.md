@@ -16,30 +16,7 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
 
 ---
 
-## Bugs
-
-### Critical
-
-- [x] **Query Slicing Bug** (`packages/simply-served/src/ram-unsafe/localCollection.ts:38`)
-  - `.slice(skip, limit)` should be `.slice(skip, skip + limit)`
-  - Breaks pagination completely
-  - **FIXED**
-
-### High Priority
-
-- [x] **JWT Handling for Public Routes** (`packages/simply-served/src/auth/verifyAuth.ts`)
-  - Invalid tokens throw errors even for `publicAccess` routes if Authorization header is present
-  - Should allow unauthenticated requests to proceed for public endpoints
-  - **FIXED** - Middleware now sets auth to null for invalid tokens, letting route-level checks decide
-
-- [x] **Weak Error Messages** (`packages/simply-served/src/endpoints/modelRestEndpoints.ts`)
-  - Validation failures return generic "Unable to create item" with no field details
-  - Zod errors are swallowed instead of returned to client
-  - **FIXED** - Error messages now include:
-    - Specific item IDs in not found errors
-    - 403 status with "Permission denied" for create failures
-    - Actual error messages from database operations
-    - Proper error handling for modify/delete endpoints
+## Improvements
 
 ### Medium Priority
 
@@ -47,29 +24,7 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
   - `schema.partial().strict()` - `.strict()` rejects unknown fields
   - Partial objects might intentionally omit required fields
 
-- [x] **No Pagination Validation**
-  - Skip/limit can be negative
-  - No maximum limit enforcement (potential DoS with huge limit)
-  - **FIXED** - Added validation in `createQuerySchema`:
-    - `skip`: must be non-negative integer
-    - `limit`: must be integer between 1 and max (default 1000)
-    - Custom `maxLimit` option supported
-    - Defense in depth in `LocalCollection.findMany()`
-
-- [x] **StringContains MongoDB Regex** (`packages/simply-served/src/mongo/conditionToFilter.ts`)
-  - Uses `/^regex/gi` flags incorrectly
-  - Should use `$options: 'i'` in MongoDB regex syntax
-  - **FIXED** - Now uses proper MongoDB syntax:
-    - `{$regex: "value", $options: "i"}` for case-insensitive
-    - `{$regex: "value"}` for case-sensitive
-    - Added `escapeRegex()` to prevent regex injection attacks
-
 ### Low Priority
-
-- [ ] **Nested Key Extraction Loop** (`packages/simply-served/src/mongo/conditionToFilter.ts:92-110`)
-  - `extractNestedKey()` while(true) loop could hang on circular condition object
-  - Add recursion depth limit
-
 - [ ] **JSON Serialization Limitations** (`packages/simply-served/src/ram-unsafe/persistentDb.ts:32`)
   - Stores Date objects as strings
   - Stores undefined as null
@@ -85,25 +40,10 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
 
 ### Query System
 
-- [x] Sorting/ordering support - **ADDED**
-  - `Query<T>` now includes optional `sort: Sort<T>[]`
-  - Supports multiple fields with `asc`/`desc` order
-  - Schema validates field names against model
-  - `LocalCollection.findMany()` implements sorting
-- [x] Count queries - **ADDED**
-  - `count()` method added to `DbMethods<T>` interface
-  - Implemented in `LocalCollection` and MongoDB adapter
-  - `POST /count` endpoint added to `modelRestEndpoints`
-  - Respects read permissions (only counts items user can access)
-  - Tests added in `query.test.ts` and `errorHandling.test.ts`
 - [ ] Aggregation pipeline
 - [ ] Distinct queries
 
 ### Permission System
-
-- [ ] Field-level permissions (currently only document-level)
-- [ ] Role-based access control (RBAC)
-- [ ] Permission inheritance
 - [ ] Audit logging for permission denials
 
 ### API Features
@@ -123,17 +63,12 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
 
 - [ ] Transaction support
 - [ ] Migrations/schema versioning
-- [ ] Connection pooling abstraction
-- [ ] Index hints/support
 
 ### Authentication
-
+- [ ] Auth Endpoints abstraction
 - [ ] Token refresh mechanism
-- [ ] Stronger auth code generation (use `crypto.randomBytes()`)
 
 ---
-
-## Suggested Improvements
 
 ### High Priority
 
@@ -153,16 +88,6 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
 
 ### Medium Priority
 
-5. **Add sorting to queries**:
-   ```typescript
-   type Query<T> = {
-     condition: Condition<T>
-     skip?: number
-     limit?: number
-     sort?: { field: keyof T; order: "asc" | "desc" }
-   }
-   ```
-
 6. **Cache SDK generation** - Currently regenerates on every request to `/meta/sdk.ts`
 
 7. **Add middleware hooks** - `beforeRequest`/`afterResponse` pattern for logging, rate limiting, etc.
@@ -181,35 +106,3 @@ Simply Served is a TypeScript framework that auto-generates REST endpoints from 
 
 ---
 
-## Test Coverage Gaps
-
-### Missing Test Suites
-
-- [x] Integration tests (full request/response cycles) - **ADDED** `errorHandling.test.ts`
-- [ ] MongoDB integration tests (real queries, not just snapshots)
-- [ ] Concurrent access tests for RAM DB
-- [ ] SDK generation tests against real endpoints
-- [ ] Authentication success flow tests
-- [x] Permission denial end-to-end tests - **ADDED** in `errorHandling.test.ts`
-- [x] Error handling tests (validation, malformed requests) - **ADDED** in `errorHandling.test.ts`
-- [ ] Field masking integration tests
-
----
-
-## Target Use Cases
-
-### Good For
-
-- Rapid prototyping
-- Admin dashboards
-- CRUD-heavy applications
-- Educational projects
-- Small teams
-
-### Not Suitable For (Currently)
-
-- High-traffic production systems
-- Complex queries/reporting
-- Multi-tenant systems
-- Applications needing transactions
-- Systems with complex authorization logic
