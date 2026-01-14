@@ -47,6 +47,15 @@ describe("assures the correct schema is created from `createConditionSchema`", (
     unSuccessful({NotEqual: undefined})
   })
 
+  test("Not", () => {
+    successAndMatchObj({Not: {Equal: ""}})
+    successAndMatchObj({Not: {Always: true}})
+    successAndMatchObj({Not: {Not: {Equal: "foo"}}})
+    unSuccessful({Not: "foo"})
+    unSuccessful({Not: 3})
+    unSuccessful({Not: null})
+  })
+
   test("Inside", () => {
     successAndMatchObj({Inside: []})
     successAndMatchObj({Inside: [""]})

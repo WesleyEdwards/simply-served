@@ -43,6 +43,9 @@ export function evalCondition<T>(item: T, condition: Condition<T>): boolean {
       evalCondition(item, andCondition)
     )
   }
+  if ("Not" in condition) {
+    return !evalCondition(item, condition.Not)
+  }
   if ("ListAnyElement" in condition) {
     if (!Array.isArray(item)) throw new Error("Invalid condition")
     return item.some((value) => evalCondition(value, condition.ListAnyElement))

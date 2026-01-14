@@ -11,6 +11,7 @@ export type Condition<T> =
   | {Always: true}
   | {Never: true}
   | {Equal: T}
+  | {NotEqual: T}
   | {GreaterThan: T}
   | {GreaterThanOrEqual: T}
   | {LessThan: T}
@@ -18,6 +19,7 @@ export type Condition<T> =
   | {Inside: T[]}
   | {Or: Array<Condition<T>>}
   | {And: Array<Condition<T>>}
+  | {Not: Condition<T>}
   | {ListAnyElement: T extends (infer U)[] ? Condition<U> : never}
   | {
       StringContains: T extends string
@@ -116,6 +118,16 @@ The `Condition<T>` object supports the following properties:
   const condition = {And: [{Equal: 42}, {Inside: [42, 100]}]}
   evalCondition(42, condition) // true
   evalCondition(100, condition) // false
+  ```
+
+### 8. `Not`
+
+- **Description**: Evaluates to `true` if the sub-condition evaluates to `false`.
+- **Example**:
+  ```typescript
+  const condition = {Not: {Equal: 42}}
+  evalCondition(43, condition) // true
+  evalCondition(42, condition) // false
   ```
 
 ### 7. `ListAnyElement`

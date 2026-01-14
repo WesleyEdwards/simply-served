@@ -26,6 +26,9 @@ export function conditionToFilter<T>(condition: Condition<T>): Filter<T> {
   if ("And" in condition) {
     return {$and: condition.And.map((cond) => conditionToFilter(cond))} as Filter<T>
   }
+  if ("Not" in condition) {
+    return {$not: conditionToFilter(condition.Not)} as Filter<T>
+  }
 
   if ("GreaterThan" in condition) {
     return {
@@ -129,6 +132,7 @@ const conditionStrs = [
   "Inside",
   "Or",
   "And",
+  "Not",
   "ListAnyElement",
   "StringContains",
 ]

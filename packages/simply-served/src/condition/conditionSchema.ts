@@ -68,6 +68,7 @@ export function createConditionSchema<T extends ZodType>(
   const lazyCondition = z.lazy(() => createConditionSchema(base))
   variants.push(z.object({Or: z.array(lazyCondition)}))
   variants.push(z.object({And: z.array(lazyCondition)}))
+  variants.push(z.object({Not: lazyCondition}))
 
   if (base instanceof z.ZodArray) {
     variants.push(

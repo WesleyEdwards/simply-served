@@ -73,6 +73,23 @@ describe("NotEqual Condition", () => {
   })
 })
 
+describe("Not Condition", () => {
+  test("should result in true Or false", () => {
+    testCondition({Not: {Equal: "test"}}, [
+      ["test", false],
+      ["not", true],
+    ])
+    testCondition({Not: {GreaterThan: 10}}, [
+      [5, true],
+      [15, false],
+    ])
+    testCondition({Not: {Not: {Equal: "test"}}}, [
+      ["test", true],
+      ["not", false],
+    ])
+  })
+})
+
 test("Inside Condition", () => {
   testCondition({Inside: ["test", "one"]}, [
     ["test", true],
