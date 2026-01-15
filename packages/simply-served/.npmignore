@@ -4,9 +4,8 @@ web_modules/
 .npm
 .eslintcache
 
-build/
-dist/
-db-store/
-*.tgz
-.claude
-CLAUDE.md
+src/
+tests/
+example/
+
+tsconfig.json

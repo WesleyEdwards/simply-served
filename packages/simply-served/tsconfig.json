@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitReturns": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "declaration": true,
+    "noUnusedLocals": true,
+    "outDir": "build/",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2022",
+    "baseUrl": "src"
+  },
+  "compileOnSave": true,
+  "include": ["src"]
+}

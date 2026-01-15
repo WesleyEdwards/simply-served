@@ -5,8 +5,10 @@ web_modules/
 .eslintcache
 
 build/
-dist/
 db-store/
-*.tgz
-.claude
-CLAUDE.md
+
+*.sh
+
+.terraform
+.terraform.lock.hcl
+terraform.tfstate

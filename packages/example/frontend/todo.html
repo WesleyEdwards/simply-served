@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo Manager</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Todo Manager</h1>
+      <div>
+        <label for="userId">User ID:</label>
+        <input
+          type="text"
+          id="userId"
+          placeholder="Enter your User ID"
+          value="df854171-5e36-47cf-b679-3258a2032b51"
+        />
+        <button id="loadTodos">Load Todos</button>
+      </div>
+      <h2>Todo List</h2>
+      <div id="todoList"></div>
+      <h2>Add Todo</h2>
+      <form id="addTodoForm">
+        <input type="text" id="newTodoItem" placeholder="New Todo" />
+        <button type="submit">Add</button>
+      </form>
+    </div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
