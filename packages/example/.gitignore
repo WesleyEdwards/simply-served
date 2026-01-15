@@ -10,3 +10,4 @@ db-store/
 *.sh
 
 .terraform
+.terraform.lock.hcl
